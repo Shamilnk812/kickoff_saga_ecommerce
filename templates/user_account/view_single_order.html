@@ -1,0 +1,79 @@
+{% extends "n.html" %}
+{% load static %}
+{% block content %}
+<div class="container my-3">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h3 class="p-3 text-center">Order View</h3>
+                    <a href="{% url 'user_orders'%}" class="btn btn-warning float-end ">&#8592;&nbsp;Back</a>
+                </div>
+
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5 class="text-center">Shipping Details</h5>
+                            <hr>
+                            <label for="" style="color: black; font-weight: 500;">First Name</label>
+                            <div class="border p-2">{{order.fname}}</div>
+                            <label for=""  style="color: black; font-weight: 500;">Last Name</label>
+                            <div class="border p-2">{{order.lname}}</div>
+                            <label for=""  style="color: black; font-weight: 500;">Phone Number</label>
+                            <div class="border p-2">{{order.phone}}</div>
+                            <label for=""  style="color: black; font-weight: 500;">Address</label>
+                            <div class="border p-2">{{order.address}},
+                                {{order.city}},
+                                {{order.state}},
+                                {{order.country}}
+                            </div>
+                            <label for=""  style="color: black; font-weight: 500;">Email</label>
+                            <div class="border p-2">{{order.email}}</div>
+                            <label for=""  style="color: black; font-weight: 500;">Pincode / Zipcode</label>
+                            <div class="border p-2">{{order.pincode}}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <h5 class="text-center">Order Details</h5>
+                            <hr>
+                            <table class="table table-bordered col-md-12">
+                                <thead class="text-center">
+                                  <tr>
+                                    <th scope="col">Name</th>
+                                    <th scope="col">Quantity</th>
+                                    <th scope="col">Price</th>
+                                    <th scope="col">Image</th>
+                                  
+                                  </tr>
+                                </thead>
+                                <tbody class="pt-3">
+                                  {% for item in orderitems%}
+                                  <tr>
+                                    <td class="pl-3">{{item.product.name}}</td>
+                                    <td class="pl-3">{{item.quantity}}</td>
+                                    <td class="pl-3">{{item.price}}</td>
+                                    {% comment %} <td class="pl-3">{{item.product.images_set.first.image.url}}</td>  {% endcomment %}
+                                    <td class="pl-3"><img src="{{ item.product.images_set.first.image.url }}" alt="{{ item.product.name }}"  width="75" height="75" /></td>
+                                   
+                                  </tr>
+                                  {% endfor %}
+                                  
+                                </tbody>
+                              </table>
+                              <div>
+                                <h4>Order Summary : </h4>
+                              <h5>Grand Total: <span class="float-end">{{order.total_price}}</span></h5>
+                              <h6> Payment Mode :&nbsp;&nbsp;&nbsp;&nbsp;{{order.payment_mode}}</h6>
+                              <h6> Order Status :&nbsp;&nbsp;&nbsp;&nbsp;{{order.status}}</h6>
+                              <h6> Tracking Id :&nbsp;&nbsp;&nbsp;&nbsp;{{order.tracking_no}}</h6>
+                              {% if order.coupon_discount_amount > 0%}
+                              <h6> Coupon Discount:&nbsp;&nbsp;&nbsp;&nbsp;{{order.coupon_discount_amount}}</h6>
+                              {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

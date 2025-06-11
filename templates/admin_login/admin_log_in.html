@@ -1,0 +1,56 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Login</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		
+		<!-- MATERIAL DESIGN ICONIC FONT -->
+		<link rel="stylesheet" href="{% static 'signup/fonts/material-design-iconic-font/css/material-design-iconic-font.min.css' %}">
+
+		<!-- STYLE CSS -->
+		<link rel="stylesheet" href="{% static 'signup/css/style.css' %}">
+        
+	</head>
+
+	<body>
+
+		<div class="wrapper" style="background-image: url('{% static '/signup/images/bg-registration-form-1.jpeg' %}');">
+			<div class="inner">
+				<div class="image-holder">
+					<img src="{% static 'signup/images/reg-form-1.jpeg' %}" alt="">
+
+				</div>
+				<form action="{%url 'admin_log_in'%}" method="POST">
+					{% csrf_token %}
+					<h3>Admin Login</h3>
+					
+					
+					<div class="form-wrapper" style="margin-top : 100px;">
+						<input type="text" name="username" placeholder="Admin" class="form-control" >
+						<i class="zmdi zmdi-admin"></i>
+					</div>
+					
+					<div class="form-wrapper">
+						<input type="password" name="password" placeholder="Password" class="form-control" >
+						<i class="zmdi zmdi-lock"></i>
+					</div>
+                   
+					{% for message in messages %}
+					 <p>{{message}}</p>
+					 {% endfor%}
+					<button type="submit">Login
+						<i class="zmdi zmdi-arrow-right"></i>
+					</button>
+				</form>
+			</div>
+		</div>
+        
+		
+	</body>
+    
+</html>
+
+  

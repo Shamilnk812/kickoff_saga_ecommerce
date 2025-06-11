@@ -1,0 +1,106 @@
+{% extends 'admin_dash/dash.html'%}
+{% load static%}
+{% block content %}
+
+<div class="main-panel">
+    <div class="content-wrapper">
+       {% include "alert.html" %}
+      <div class="page-header">
+        {% comment %} <h3 class="page-title"> Basic Tables </h3> {% endcomment %}
+        <h4 class="card-title">All Orders</h4>
+      
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            {% comment %} <li class="breadcrumb-item"><a href="#">Tables</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Basic tables</li> {% endcomment %}
+          </ol>
+        </nav>
+      </div> 
+      {% if all_orders%}
+      {% comment %} <div class="row"> {% endcomment %}
+        <div class="col-lg-12 grid-margin stretch-card">
+          <div class="card">
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Id</th>
+                      <th>Tracking ID</th>
+                      <th>Date</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                      <th>Cancel</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  {% for order in all_orders %}
+                    <tr>
+                      <td>{{forloop.counter}}</td>
+                      <td>{{order.tracking_no}}</td>
+                      <td>{{order.created_at}}</td>
+                      <td>{{order.total_price | stringformat:'d'}}</td>
+                      <td style="color:green">{{order.status}}</td>
+                      <td ><label class="badge badge-info"><a style="color : white;" href="{% url 'view_single_order' order.tracking_no %}"> View </a></label>
+                        {% if order.status == 'Cancel' %}
+                          Order Canceled
+                      {% elif order.status == 'Deliverd'%}
+                          Order Deliverd
+                        {% else %}
+                          <label class="badge badge-warning"><a style="color : white;" href="{% url 'edit_order_status' order.tracking_no %}"> Edit </a></label>
+                      {% endif %}
+                      </td>
+                      {% comment %} <td> <label class="badge badge-danger"><a style="color : white;" href="{% url 'delete_order_admin' order.tracking_no %}"> Cancel </a></label></td> {% endcomment %}
+                      <td>
+                        {% if order.status == 'Cancel' %}
+                        <span style="color: red;">Canceled</span>
+                    {% elif order.status == 'Deliverd'%}
+                    <span style="color: green;">Deliverd</span>
+                    {% else %}
+                        <button class="badge badge-danger"
+                            onclick="showCancelConfirmation('{{ order.tracking_no }}')">Cancel</button>
+                    {% endif %}
+                        {% comment %} <button class="badge badge-danger" onclick="showCancelConfirmation('{{ order.tracking_no }}')">Cancel</button> {% endcomment %}
+                      </td>
+                </tr>
+                    {%endfor%}  
+                    
+                   
+                    
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <h3 style="color:red">No orders !!!</h3>
+        {% endif %}
+      </div>
+     </div>
+
+  </div>
+  </div>
+  {% comment %} <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11"> {% endcomment %}
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+    function showCancelConfirmation(trackingNo) {
+      Swal.fire({
+        title: 'Cancel Order',
+        text: 'Are you sure you want to cancel this order?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, cancel it!',
+        cancelButtonText: 'No, keep it'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // If the user confirms, redirect to the delete view
+          window.location.href = "{% url 'delete_order_admin' 0 %}".replace('0', trackingNo);
+        }
+      });
+    }
+  </script>
+  
+{% endblock content %}

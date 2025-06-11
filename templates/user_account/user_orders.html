@@ -1,0 +1,140 @@
+{% extends "user_account/user_base_account.html" %}
+{% block account %}
+<div >
+    {% if orders%}               
+    <table class="table table-bordered col-md-12">
+     
+        <thead class="text-center">
+          <tr>
+            <th scope="col">Order Date</th>
+            <th scope="col">Tracking Number</th>
+            <th scope="col">Total Price</th>
+            <th scope="col">Status</th>
+            <th scope="col">Download</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="pt-3">
+          {% for item in orders%}
+          <tr>
+            <td class="pl-3">{{item.created_at}}</td>
+            <td class="pl-3">{{item.tracking_no}}</td>
+            <td class="pl-3">{{item.total_price}}</td>
+            <td class="pl-3">{{item.status}}</td>
+            <td class="pl-3"><a href="{% url 'download_invoice' item.id%} ">Download</a></td>
+
+            <td class=" text-center"colspan="2"> 
+              <a href="{% url 'view_order' item.tracking_no %}" class="btn btn-primary">View Order</a> &nbsp;&nbsp;
+             {% comment %} <a href="{% url 'cancel_order' item.tracking_no %}" class="btn btn-danger cancel-order-btn">Cancel Order</a> {% endcomment %}
+             {% comment %} {% if item.status != 'Deliverd' %}
+             <a href="{% url 'cancel_order' item.tracking_no %}" class="btn btn-danger cancel-order-btn">Cancel Order</a>
+           {% endif %} {% endcomment %}
+           {% if item.status == 'Cancel' %}
+           <span style="color: red;">Order Canceled</span>
+       {% elif item.status == 'Deliverd'%}
+     
+      <span style="color: green;">&nbsp; Order Deliverd </span>
+           {% comment %} <a href="#" class="btn btn-danger cancel-order-btn" data-toggle="modal"
+               data-target="#cancelModal{{ item.id }}">Cancel Order</a> {% endcomment %}
+       {% else %}
+       <a href="#" class="btn btn-danger cancel-order-btn" data-toggle="modal"
+       data-target="#cancelModal{{ item.id }}">Cancel Order</a>
+           {% comment %} {% if item.status != 'Deliverd' %}
+           <a href="#" class="btn btn-danger cancel-order-btn" data-toggle="modal"
+               data-target="#cancelModal{{ item.id }}">Cancel Order</a>
+           {% endif %} {% endcomment %}
+     
+           {% comment %} {% if item.status == 'Deliverd' %}
+             <button type="button" class="btn btn-warning return-order-btn" data-toggle="modal" data-target="#returnModal{{ item.id }}">
+               Return Order
+             </button> {% endcomment %}
+           {% endif %}
+           {% comment %} {% if item.status == 'Cancel' %}
+            Order Cancelled
+           {% endif %} {% endcomment %}
+            </td>
+           
+           
+          </tr>
+          {% comment %} ===================== MODAL FOR CANCEL ORDER ======== {% endcomment %}
+          
+          {% comment %} ======================================================== {% endcomment %}
+           <!-- Cancel Order Modal -->
+           <div class="modal fade" id="cancelModal{{ item.id }}" tabindex="-1" role="dialog"
+           aria-labelledby="cancelModalLabel" aria-hidden="true">
+           <div class="modal-dialog" role="document">
+               <div class="modal-content">
+                   <div class="modal-header">
+                       <h5 class="modal-title" id="cancelModalLabel">Cancel Order - {{ item.tracking_no }}</h5>
+                       <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                           <span aria-hidden="true">&times;</span>
+                       </button>
+                   </div>
+                   <div class="modal-body">
+                       <form id="cancelForm{{ item.id }}" action="{% url 'cancel_order' item.tracking_no %}"
+                           method="post">
+                           {% csrf_token %}
+                           <div class="form-group">
+                               <label for="cancelReason">Reason for Cancellation:</label>
+                               <textarea class="form-control" id="cancelReason" name="cancel_reason" rows="3"
+                                   required></textarea>
+                           </div>
+                           <button type="submit" class="btn btn-danger">Cancel Order</button>
+                       </form>
+                   </div>
+               </div>
+           </div>
+       </div>
+          {% endfor %}
+          
+        </tbody>
+      </table>
+      {% else %}
+    <p>No order has been made yet.</p>
+    <a href="{% url 'store'%}" class="btn btn-outline-primary-2"><span>GO SHOP</span><i class="icon-long-arrow-right"></i></a>
+    {% endif %}
+</div><!-- .End .tab-pane -->  
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    {% if messages %}
+    {% for message in messages %}
+        Swal.fire({
+            icon: "{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% endif %}",
+            title: "{{ message.tags }}",
+            text: "{{ message }}",
+        });
+    {% endfor %}
+{% endif %}
+  
+  </script>
+
+{% comment %} 
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+      const cancelOrderBtns = document.querySelectorAll(".cancel-order-btn");
+
+      cancelOrderBtns.forEach(function (btn) {
+          btn.addEventListener("click", function (event) {
+              event.preventDefault();
+
+              const orderURL = btn.getAttribute("href");
+
+              swal({
+                  title: "Are you sure?",
+                  text: "Do you want to cancel this order?",
+                  icon: "warning",
+                  buttons: ["Cancel", "OK"],
+              }).then((confirmed) => {
+                  if (confirmed) {
+                      // User confirmed, proceed with order cancellation
+                      window.location.href = orderURL; // Redirect to the cancel URL
+                  }
+              });
+          });
+      });
+  });
+</script> {% endcomment %}
+{% endblock account %}

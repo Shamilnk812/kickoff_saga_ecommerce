@@ -1,0 +1,68 @@
+{% extends 'admin_dash/dash.html'%}
+{% load static%}
+
+
+{% block content %}
+
+
+<div class="main-panel">
+    <div class="content-wrapper">
+      <div class="page-header">
+        <h3 class="page-title">Category Management</h3>
+        
+      </div>
+      
+        <div class="col-md-6 grid-margin stretch-card">
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title">Add Category</h4>
+              {% comment %} <p class="card-description"> Basic form layout </p> {% endcomment %}
+              {% for message in messages%}
+              <p>{{message}}</p>
+              {% endfor %}
+              <form class="forms-sample" action="{% url 'add_category'%}" method='POST'>
+                {% csrf_token %}
+
+                <div class="form-group">
+                  {{ form.name.label_tag }}
+                  {{ form.name }}
+                  {% if form.name.errors %}
+                      <p style="color: red;">{{ form.name.errors.0 }}</p>
+                  {% endif %}
+              </div>
+              
+              <div class="form-group">
+                  {{ form.description.label_tag }}
+                  {{ form.description }}
+                  {% if form.description.errors %}
+                      <p style="color: red;">{{ form.description.errors.0 }}</p>
+                  {% endif %}
+              </div>
+              
+                <div class="form-group">
+                  {{ form.offer.label_tag }}
+                  {{ form.offer }}
+                  {% if form.offer.errors %}
+                      <p style="color: red;">{{ form.offer.errors.0 }}</p>
+                  {% endif %}
+              </div>
+                {% comment %} <div class="form-group">
+                  <label for="exampleInputUsername1">Category</label>
+                  <input type="text" name="name" class="form-control" id="exampleInputUsername1" placeholder="Product name">
+               </div>
+               <div class="form-group">
+                  <label for="exampleInputUsername1">Description</label>
+                  <input type="text" name="description" class="form-control" id="exampleInputUsername1" placeholder="Enter Description">
+               </div> {% endcomment %}
+                   <button type="submit" class="btn btn-success mr-2"> Add </button>
+                   <button class="btn btn-dark"><a href="{% url 'category_management'%}">Cancel</a></button>
+              </form>
+             
+            </div>
+          </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock content %}

@@ -1,0 +1,74 @@
+{% extends "admin_dash/dash.html" %}
+{% load static %}
+{% block content %}
+
+<div class="main-panel">
+    <div class="content-wrapper">
+      <div class="page-header">
+        {% comment %} <h3 class="page-title"> Basic Tables </h3> {% endcomment %}
+        <h4 class="card-title">BRAND MANAGEMENT</h4>
+      
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            {% comment %} <li class="breadcrumb-item"><a href="#">Tables</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Basic tables</li> {% endcomment %}
+          </ol>
+        </nav>
+      </div>
+      {% comment %} <div class="row"> {% endcomment %}
+        <div class="col-lg-12 grid-margin stretch-card">
+          <div class="card">
+            {% include "alert.html" %}
+            <div class="card-body">
+              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_brand'%}">Add New Brand</a></label>
+
+              {% comment %} <p class="card-description"> Add class <code>.table</code>
+              </p> {% endcomment %}
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Id</th>
+                      <th>Name</th>
+                      <th>Edit</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  {% for brand in all_brands %}
+                    <tr>
+                      <td>{{forloop.counter}}</td>
+                      <td>{{brand.name}}</td>
+                     
+                      <td><label class="badge badge-warning"><a style="color : white;" href="{% url 'edit_brand' brand.id%}"> Edit </a></label></td>
+                      {% comment %} <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'delete_brand' brand.id%}"> Delete </a></label></td>  {% endcomment %}
+                      {% comment %} <td> <button class="badge badge-danger" onclick="showDeleteConfirmation('{{ brand.id }}')">Delete</button></td> {% endcomment %}
+                      <td>
+                        <label class="badge  {% if brand.is_block %}badge-success{% else %}badge-danger{% endif %}">
+                          <a style="color: white;" href="{% url 'delete_brand' brand.id %}">
+                            {% if brand.is_block %}
+                              Unblock
+                            {% else %}
+                              Block
+                            {% endif %}
+                          </a>
+                        </label>
+                      </td> 
+                </tr>
+                    {%endfor%}  
+                    
+                   
+                    
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+     </div>
+
+  </div>
+  </div>
+  
+{% endblock content %}

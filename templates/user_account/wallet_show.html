@@ -1,0 +1,30 @@
+{% extends "user_account/user_base_account.html" %}
+{% block account %}
+<div>
+  <h4>Wallet: {{ wallet.wallet|default:0 }}</h4>
+<div class="row">
+    {% for coupon in coupons%}
+    <div class="col-lg-6">
+        <div class="card card-dashboard">
+          
+            <div class="card-body">
+                <h3 class="card-title">Coupon Code : <span style="background : green;color : white"> {{ coupon.coupon_code | upper }}</span></h3><!-- End .card-title -->
+                 
+                    <p styl>Minimum Amount : &nbsp<span style="color : black;font-size: 18px">{{ coupon.minimum_amount }}</span></p>
+                    <p>Discount Amount : &nbsp<span style="color : black;font-size: 18px">{{ coupon.discound_amount }}</span></p>
+                        {% comment %} {{ address.email }}<br>
+                        {{ address.phone }}<br>
+                        {{ address.address }}<br>
+                        {{ address.city }}, {{ address.state }}<br>
+                        {{ address.country }} {{ address.pincode }}<br> {% endcomment %}
+                        
+                
+        
+            </div><!-- End .card-body -->
+        </div><!-- End .card-dashboard -->
+    </div><!-- End .col-lg-6 -->
+    {% endfor %}
+   
+</div><!-- End .row -->
+</div>
+{% endblock account %}

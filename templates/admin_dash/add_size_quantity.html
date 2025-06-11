@@ -1,0 +1,50 @@
+{% extends "admin_dash/dash.html" %}
+{% load static %}
+
+{% block content %}
+<div class="main-panel">
+  <div class="content-wrapper">
+      <div class="page-header">
+          <h3 class="page-title">Add Variants</h3>
+         
+      </div>
+
+      <div class="col-md-6 grid-margin stretch-card">
+          <div class="card">
+              <div class="card-body">
+                  <h4 class="card-title">Add Variants</h4>
+                  <form class="forms-sample" method="POST" enctype="multipart/form-data">
+                      {% csrf_token %}
+
+                      <div class="form-group">
+                          <label for="id_name">Size</label>
+                          <input type="text" name="size" class="form-control" id="id_name" placeholder="Enter size">
+                      </div>
+                      <div class="form-group">
+                          <label for="id_name">Quantity</label>
+                          <input type="text" name="quantity" class="form-control" id="id_name" placeholder="Add quantity">
+                      </div>
+
+                     
+                      <div class="form-group">
+                        {% for message in messages %}
+                            <p style="color:red;">{{ message }}</p>
+                        {% endfor %}
+                      </div>
+
+                      <button type="submit" class="btn btn-success mr-2">Add</button>
+                      <a href="#" class="btn btn-dark">Cancel</a>
+                  </form>
+
+               
+              </div>
+          </div>
+      </div>
+  </div>
+</div>
+
+
+
+
+
+{% endblock content %}

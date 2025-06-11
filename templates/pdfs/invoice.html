@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Lit-Leaves Invoice</title>
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Favicon -->
+    <!-- Include your CSS files here -->
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+
+        .invoice {
+            max-width: 800px;
+            margin: 3px auto;
+            background-color: #ffffff;
+            padding: 3px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .invoice-header,
+        .invoice-center,
+        .invoice-bottom {
+            margin-bottom: 5px;
+        }
+
+        .invoice-title {
+            font-size: 24px;
+            color: #007bff;
+        }
+
+        .address {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .total-amount {
+            font-size: 24px;
+            color: #28a745;
+            margin-top: 10px;
+        }
+
+        .note {
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="invoice">
+        <div class="invoice-inner">
+            <div class="invoice-info" id="invoice_wrapper">
+                <div class="invoice-header">
+                    <div class="invoice-title">Invoice</div>
+                </div>
+                <div class="invoice-center">
+                    <div class="address">
+                        <p><strong>Invoice Number:</strong> #{{ invoice_number }}</p>
+                        <p><strong>Invoice Date:</strong> {{ order.created_at }}</p>
+                    </div>
+                    <div class="address">
+                        <h4>Invoice To</h4>
+                        <p>
+                            <strong class="text-brand">Kickoff</strong><br>
+                            205 North Michigan Avenue, Suite 810<br>
+                            Chicago, 60601, USA<br>
+                            <abbr title="Phone">Phone:</abbr> (+91) 9744421036<br>
+                            <abbr title="Email">Email:</abbr> Kickoff@gmail.com
+                        </p>
+                    </div>
+                    <div class="address">
+                        <h4>Bill To</h4>
+                        <p>
+                            <strong class="text-brand">{{ order.fname }}</strong><br>
+                            {{ order.address }}<br>
+                            {{ order.city }}, {{ order.state }}, {{ order.country }}<br>
+                            <abbr title="Phone">Phone:</abbr> {{ order.phone }}<br>
+                            <abbr title="Email">Email:</abbr> {{ order.email }}
+                        </p>
+                    </div>
+                    <div class="table-responsive">
+                        <h2>Order Items:</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Unit Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for order_item in order.orderitem_set.all %}
+                                <tr>
+                                    <td>{{ order_item.product.name }}<br><small>SKU: FWM15VKT</small></td>
+                                    <td>${{ order_item.product.price }}</td>
+                                    <td>{{ order_item.quantity }}</td>
+                                    <td>${{ order_item.total_price }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="invoice-bottom">
+                    <div class="address">
+                        <h4>Order Summary</h4>
+                        <p>Payment Method : &nbsp;{{ order.payment_mode }}</p>
+                        {%if order.coupon_discount_amount > 0 %}
+                        <p>Coupon Discount : &nbsp;{{ order.coupon_discount_amount }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="total-amount">Total Amount: ${{ order.total_price }}</div>
+                    <div class="note">
+                        <strong>Note:</strong> This is a computer-generated receipt and does not require a physical signature.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

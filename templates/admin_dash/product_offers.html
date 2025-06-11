@@ -1,0 +1,70 @@
+{% extends "admin_dash/dash.html" %}
+{%load static %}
+{% block content %}
+
+
+<div class="main-panel">
+    <div class="content-wrapper">
+      <div class="page-header">
+        <h4 class="card-title">OFFER &nbsp;MANAGEMENT</h4>
+      </div>
+      {% comment %} <div class="row"> {% endcomment %}
+        <div class="col-lg-12 grid-margin stretch-card">
+          <div class="card">
+            {% include "alert.html" %}
+            <div class="card-body">
+              {% comment %} <label class="badge badge-success"><a style="color : white;" href="{% url 'add_offer' %}">Add New Offer</a></label>
+              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_offer' %}">Add New Offer</a></label> {% endcomment %}
+                 <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>PRODUCT</th>
+                      <th>OFFERS</th>
+                      <th>ADD &amp; EDIT</th>
+                      <th>ACTIONS</th>
+                      {% comment %} <th>Discount</th>
+                      <th>Status</th>
+                      <th>Actions</th> {% endcomment %} 
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for product in products%}
+                    <tr>
+                      <td>{{forloop.counter}}</td>
+                      <td>{{product.name}}</td>
+                      <td style="color:{%if product.offer%}yellow{%else%}red{%endif%}">
+                        {%if product.offer%}
+                        {{product.offer }}
+                        {% else %}
+                        No Offers
+                        {% endif %}
+                    </td>
+                      <td><label class="badge badge-info"><a style="color : white;" href="{% url 'offers_for_product' product.id%}">+ Add &amp; edit</a></label>
+                      </td>
+                      {% if product.offer%}
+                      <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'remove_product_offer' product.id%}">Remove</a></label>
+                      </td>
+                      {% else %}
+                      <td>No offers</label>
+                      </td>
+                       {% endif %}
+                </tr>
+                    {%endfor%}   
+                   </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+     </div>
+
+  </div>
+  </div>
+
+
+{% endblock content %}
+
+

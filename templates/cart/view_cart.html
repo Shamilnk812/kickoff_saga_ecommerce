@@ -1,0 +1,394 @@
+{% extends "n.html" %}
+{% load static %}
+           
+{% block content %}
+<main class="main">
+    <div class="page-header text-center" style="background-image: url('{% static '/assets/images/neww_kick_head.jpeg' %}')">
+        <div class="container">
+            <h1 class="page-title" style="color: white">Shopping Cart</h1>
+        </div><!-- End .container -->
+    </div><!-- End .page-header -->
+    <nav aria-label="breadcrumb" class="breadcrumb-nav">
+        <div class="container">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home'%}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'store'%}">Shop</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Shopping Cart</li>
+            </ol>
+        </div><!-- End .container -->
+    </nav><!-- End .breadcrumb-nav -->
+    {% comment %} {% for message in messages %}
+    <p>{{message}}</p>
+    {% endfor %} {% endcomment %}
+     {% comment %} {% include "alert.html" %} {% endcomment %}
+       {% if cart %}
+    
+    <div class="page-content">
+        <div class="cart">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-9">
+                        <table class="table table-cart table-mobile">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                             <form id="update-cart-form" method="post" action="{% url 'update_cart' %}">
+                                {% csrf_token %}
+                                {% for item in cart%}
+                                <tr class="cart-item" data-item-id="{{ item.id }}">
+                                    <td class="product-col">
+                                        <div class="product">
+                                            <figure class="product-media">
+                                                <a href="#">
+                                                    <img src="{{ item.product.images_set.first.image.url}}" alt="Product image">
+                                                </a>
+                                            </figure>
+
+                                            <h3 class="product-title">
+                                                <a href="#">{{ item.product.name}}</a>
+                                            </h3><!-- End .product-title -->
+                                        </div><!-- End .product -->
+                                    </td>
+                                    <td class="price-col">{% if item.product.offer and item.product.offer.is_valid%}
+                                        ${{ item.product.discounted_price|stringformat:'d' }}
+                                        {% else %}
+                                        ${{ item.product.price | stringformat:'d'}}
+                                        {% endif %}
+                                    </td>
+                                    <td class="quantity-col">
+                                        <div class="cart-product-quantity">
+                                            <input type="number" name="quantity_{{ item.id }}" class="form-control quantity-input" value="{{ item.product_qty }}" min="1" max="10" step="1" data-decimals="0" required>
+                                           
+                                            {% comment %} <input type="hidden" name="item_id" value="{{ item.id }}"> {% endcomment %}
+
+                                        </div><!-- End .cart-product-quantity -->
+                                    </td>
+                                    <td class="total-col">${{ item.total_cost | stringformat:'d'}}</td>
+                                    <!-- <td class="remove-col"><a href="{% url 'remove_cart_item' item.id %}" ><i class="icon-close"></i></a></td> -->
+                                    <td><a href="{% url 'remove_cart_item' item.id %}" class="remove-item"><i class="icon-close"></i></a></td>
+
+                                </tr>
+                                {% endfor %}
+                                
+                             </tbody>
+                       
+
+                             <button type="submit" class="btn btn-outline-dark-2 update-cart">
+                                <span>UPDATE CART</span>
+                                <i class="icon-refresh"></i>
+                             </button>
+                        </form>
+                        </table><!-- End .table table-wishlist -->
+
+                        <div class="cart-bottom">
+                            <div class="cart-discount">
+                                <form  method="POST">
+                                    {% csrf_token %}
+                                    <div class="input-group">
+                                        <input type="text" name="coupon" class="form-control" required placeholder="coupon code">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-primary-2" type="submit" ><i class="icon-long-arrow-right"></i></button>
+                                        </div><!-- .End .input-group-append -->
+                                    </div><!-- End .input-group -->
+                                </form>
+                            
+                                     {% comment %} {% if cart.0.coupon %}
+                                            
+                                            <a class="btn btn-success" href="{% url 'remove_coupon' cart.0.id %}">{{ cart.0.coupon.coupon_code }}</a>
+                                    {% endif %} {% endcomment %}
+                            
+                            </div><!-- End .cart-discount -->
+                            
+                                
+                            <!-- <a href="{% url 'update_cart' %}" class="btn btn-outline-dark-2"><span>UPDATE CART</span><i class="icon-refresh"></i></a> -->
+                            <!-- <button type="submit" class="btn btn-outline-dark-2 update-cart" >
+                                <span>UPDATE CART</span>
+                                <i class="icon-refresh"></i>
+                            </button> -->
+                            <!-- <button type="submit" class="btn btn-outline-dark-2 update-cart" id="update-cart-button">
+                                <span>UPDATE CART</span>
+                                <i class="icon-refresh"></i>
+                            </button> -->
+                           
+                           
+                        </div><!-- End .cart-bottom -->
+                    </div><!-- End .col-lg-9 -->
+                    <aside class="col-lg-3">
+                        <div class="summary summary-cart">
+                            <h3 class="summary-title">Cart Total</h3><!-- End .summary-title -->
+
+                            <table class="table table-summary">
+                                <tbody>
+                                    <tr class="summary-subtotal">
+                                        <td>Subtotal:</td>
+                                        <td class="total-col" id="overall-total">$160.00</td>
+                                    </tr><!-- End .summary-subtotal -->
+                                    <tr class="summary-shipping">
+                                        <td>Shipping:</td>
+                                        <td>&nbsp;</td>
+                                    </tr>
+
+                                    <tr class="summary-shipping-row">
+                                        <td>
+                                            <div class="custom-control custom-radio">
+                                                {% comment %} <input type="radio" id="free-shipping" name="shipping" class="custom-control-input"> {% endcomment %}
+                                                <input type="radio" id="free-shipping" name="shipping" class="custom-control-input" checked>
+
+                                                {% comment %} <input type="radio" id="free-shipping" name="shipping" class="custom-control-input" checked> {% endcomment %}
+                                                {% comment %} <input type="radio" id="free-shipping" name="shipping" class="custom-control-input" value="0" checked> {% endcomment %}
+                                                <label class="custom-control-label" for="free-shipping">Free Shipping</label>
+                                            </div><!-- End .custom-control -->
+                                        </td>
+                                        <td>$0.00</td>
+                                    </tr><!-- End .summary-shipping-row -->
+
+                                    <tr class="summary-shipping-row">
+                                        <td>
+                                            <div class="custom-control custom-radio">
+                                                <input type="radio" id="standard-shipping" name="shipping" class="custom-control-input">
+
+                                               {% comment %} <input type="radio" id="standard-shipping" name="shipping" class="custom-control-input">  {% endcomment %}
+                                                {% comment %} <input type="radio" id="standart-shipping" name="shipping" class="custom-control-input"> {% endcomment %}
+                                                {% comment %} <input type="radio" id="standard-shipping" name="shipping" class="custom-control-input" value="10"> {% endcomment %}
+
+                                                <label class="custom-control-label" for="standard-shipping">Standart:</label>
+                                            </div><!-- End .custom-control -->
+                                        </td>
+                                        <td>$10.00</td>
+                                    </tr><!-- End .summary-shipping-row -->
+
+                                    <tr class="summary-shipping-row">
+                                        <td>
+                                            <div class="custom-control custom-radio">
+                                              <input type="radio" id="express-shipping" name="shipping" class="custom-control-input"> 
+                                                {% comment %} <input type="radio" id="express-shipping" name="shipping" class="custom-control-input"> {% endcomment %}
+                                                {% comment %} <input type="radio" id="express-shipping" name="shipping" class="custom-control-input" value="20"> {% endcomment %}
+
+
+                                                <label class="custom-control-label" for="express-shipping">Express:</label>
+                                            </div><!-- End .custom-control -->
+                                        </td>
+                                        <td>$20.00</td>
+                                    </tr><!-- End .summary-shipping-row -->
+
+                                    {% if cart.0.coupon %}
+                                    <tr class="summary-shipping">
+                                        <td>Coupon applied :</td>
+                                        <td>&nbsp;</td>
+                                    </tr>
+                                    <tr class="summary-shipping-row">
+                                            <td style="background:violet" class="text-center">{{ cart.0.coupon.coupon_code|upper }}</td>
+                                            <td><a href="{% url 'remove_coupon' cart.0.id %}"><i class="icon-close"></i></a></td>
+                                       </tr>
+                                       <tr class="summary-shipping">
+                                        <td>Coupon discount :&nbsp;</td>
+                                        <td>${{ cart.0.coupon.discound_amount}} </td>
+                                    </tr>
+                                    {% endif %}
+                                    <br>
+                                    {% if total_saved_amount > 0 %}
+                                        <tr class="summary-shipping">
+                                            <td>Saved Amount (Offers):</td>
+                                            <td>${{ total_saved_amount|stringformat:'d' }}</td>
+                                        </tr><!-- End .summary-shipping -->
+                                    {% endif %}
+                                    <tr class="summary-total">
+                                        <td>Total:</td>
+                                        <td id="grand_total_amount">{{total_amount|stringformat:'d'}}</td>
+                                    </tr><!-- End .summary-total -->
+                                </tbody>
+                            </table><!-- End .table table-summary -->
+
+                            <a href="{% url 'checkout'%}" class="btn btn-outline-primary-2 btn-order btn-block">PROCEED TO CHECKOUT</a>
+                        </div><!-- End .summary -->
+
+                        <a href="{% url 'store'%}" class="btn btn-outline-dark-2 btn-block mb-3"><span>CONTINUE SHOPPING</span><i class="icon-refresh"></i></a>
+                    </aside><!-- End .col-lg-3 -->
+                </div><!-- End .row -->
+            </div><!-- End .container -->
+        </div><!-- End .cart -->
+    </div><!-- End .page-content -->
+    {%else%}
+
+
+    <div class="error-content text-center" style="background-image: url(assets/images/backgrounds/error-bg.jpg)">
+        <div class="container">
+            <h4 class="error-title">You Cart is empty !</h4><!-- End .error-title -->
+            <p>We are sorry, the page you've requested is not available.</p>
+            <a href="{% url 'store'%}" class="btn btn-outline-primary-2 btn-minwidth-lg">
+                <span>BACK TO SHOPPING</span>
+                <i class="icon-long-arrow-right"></i>
+            </a>
+        </div><!-- End .container -->
+    </div><!-- End .error-content text-center -->
+
+    {% endif %}
+</main><!-- End .main -->
+
+
+
+
+
+
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        {% comment %} document.addEventListener("DOMContentLoaded", function () {
+            const removeItemLinks = document.querySelectorAll(".remove-item");
+        
+            removeItemLinks.forEach(function (link) {
+                link.addEventListener("click", function (event) {
+                    event.preventDefault();
+        
+                    const cartItemId = link.getAttribute("href"); // This is the URL to remove the item
+        
+                    // Show a SweetAlert confirmation dialog
+                    swal({
+                        title: "Are you sure?",
+                        text: "Do you want to remove this item from your cart?",
+                        icon: "warning",
+                        buttons: ["Cancel", "OK"],
+                    }).then((confirmed) => {
+                        if (confirmed) {
+                            // User confirmed, proceed with item removal
+                            window.location.href = cartItemId; // Redirect to the remove URL
+                        }
+                    });
+                });
+            });
+        }); {% endcomment %}
+
+
+
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    const quantityInputs = document.querySelectorAll(".quantity-input");
+    const priceElements = document.querySelectorAll(".price-col");
+    const totalElements = document.querySelectorAll(".total-col");
+    const overallTotalElement = document.getElementById("overall-total");
+
+    // Calculate the overall total cost
+    function calculateOverallTotal() {
+        let overallTotal = 0;
+
+        for (let i = 0; i < quantityInputs.length; i++) {
+            const quantity = parseInt(quantityInputs[i].value, 10);
+            const productPrice = parseFloat(priceElements[i].textContent.replace("$", "").trim());
+            const newTotal = quantity * productPrice;
+            totalElements[i].textContent = "$" + newTotal.toFixed(2);
+            overallTotal += newTotal;
+        }
+
+        // Convert the overallTotal to a number, and then back to a string to remove trailing zeros
+        overallTotal = Number(overallTotal.toFixed(2));
+        overallTotalElement.textContent = overallTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Add an event listener to each quantity input to recalculate the total when the quantity changes
+    quantityInputs.forEach(function (input) {
+        input.addEventListener("input", calculateOverallTotal);
+    });
+
+    // Calculate the initial overall total
+    calculateOverallTotal();
+});
+
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    const quantityInputs = document.querySelectorAll(".cart-product-quantity input");
+    const priceElements = document.querySelectorAll(".price-col");
+    const overallTotalElement = document.getElementById("overall-total");
+
+    // Calculate the overall total cost
+    function calculateOverallTotal() {
+        let overallTotal = 0;
+
+        for (let i = 0; i < quantityInputs.length; i++) {
+            const quantity = parseInt(quantityInputs[i].value, 10);
+            const productPrice = parseFloat(priceElements[i].textContent.replace("$", "").trim());
+            overallTotal += quantity * productPrice;
+        }
+
+        overallTotalElement.textContent = "$" + overallTotal.toFixed(2).replace(/\.?0*$/, "");
+
+    }
+
+    // Add an event listener to each quantity input to recalculate the total when the quantity changes
+    quantityInputs.forEach(function (input) {
+        input.addEventListener("input", calculateOverallTotal);
+    });
+
+    // Calculate the initial overall total
+    calculateOverallTotal();
+});
+
+
+document.addEventListener("DOMContentLoaded", function () {
+    const shippingRadioButtons = document.querySelectorAll('input[name="shipping"]');
+    const overallTotalElement = document.getElementById("grand_total_amount");
+
+    // Define shipping costs
+    const shippingCosts = {
+        "free-shipping": 0,
+        "standard-shipping": 10,
+        "express-shipping": 20
+    };
+
+    // Update the overall total with shipping cost
+    function updateTotalWithShipping() {
+        // Get the selected shipping method
+        const selectedShipping = Array.from(shippingRadioButtons).find(radio => radio.checked);
+
+        // Check if the shipping method is selected
+        if (selectedShipping) {
+            // Get the shipping cost based on the selected shipping method
+            const shippingCost = shippingCosts[selectedShipping.id];
+
+            // Update the overall total element to display the total amount with the shipping cost
+            overallTotalElement.textContent = "$" + (parseFloat('{{total_amount}}') + shippingCost).toFixed(2).replace(/\.?0*$/, "");
+        }
+    }
+
+    // Add an event listener to each shipping radio button to recalculate the total when the shipping method changes
+    shippingRadioButtons.forEach(function (radio) {
+        radio.addEventListener("change", updateTotalWithShipping);
+    });
+
+    // Calculate the initial overall total
+    updateTotalWithShipping();
+});
+
+
+{% comment %} Sweet alerts  {% endcomment %}
+   
+        {% if messages %}
+            {% for message in messages %}
+                Swal.fire({
+                    icon: "{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% endif %}",
+                    title: "{{ message.tags }}",
+                    text: "{{ message }}",
+                });
+            {% endfor %}
+        {% endif %}
+    
+
+
+
+        </script>
+        
+
+{% endblock content %}
+
+ 

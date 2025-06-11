@@ -1,0 +1,93 @@
+
+
+{% extends "admin_dash/dash.html" %}
+{%load static %}
+{% block content %}
+
+
+<div class="main-panel">
+    <div class="content-wrapper">
+      <div class="page-header">
+     <h3 class="page-title "> PRODUCT&nbsp VARIANTS </h3> 
+    </div>
+         {% include "alert.html" %}
+      <div class="row">
+        <div class="col-lg-6 grid-margin stretch-card">
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title text-center">Images</h4>
+              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_image_product' product_id%}">+ Add Image
+              </a></label>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Id</th>
+                      <th>Images</th>
+                      <th>Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for img in image%} 
+                    <tr>
+                      <td>{{forloop.counter}}</td>
+                      <td><img src="{{img.image.url}}" alt="Product Image">  </td>
+                      <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'delete_product_image' img.id %}"> Delete </a></label></td>
+                  </tr>
+                    {% endfor %}
+                    
+                   
+                    
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% comment %} =================|SHOW SIZE AND QUANTITY ==================== {% endcomment %}
+
+
+        <div class="col-lg-6 grid-margin stretch-card">
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title text-center">Size and Quantity</h4>
+              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_size_and_quantity' product_id%}">+ Add Size 
+              </a></label>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Id</th>
+                      <th>Size</th>
+                      <th>Quantity</th>
+                      <th>Delete</th> 
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for variant in variants%} 
+                    <tr>
+                      <td>{{forloop.counter}}</td>
+                      <td>{{variant.size}}</td>
+                      <td>{{variant.quantity}} </td>
+                      <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'delete_product_size' variant.id %}"> Delete </a></label></td>
+                 </tr>
+                    {% endfor %}
+                    
+                   
+                    
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+     </div>
+
+  </div>
+  </div>
+
+  
+{% endblock content %}
+
+

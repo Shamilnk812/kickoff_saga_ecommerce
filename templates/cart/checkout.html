@@ -1,0 +1,281 @@
+{% extends "n.html" %}
+{% load static %}
+{% block content %}
+
+
+<main class="main">
+    <div class="page-header text-center" style="background-image: url('{% static '/assets/images/neww_kick_head.jpeg' %}')">
+        <div class="container">
+            <h1 class="page-title" style="color: white">Checkout</h1>
+        </div><!-- End .container -->
+    </div><!-- End .page-header -->
+    <nav aria-label="breadcrumb" class="breadcrumb-nav">
+        <div class="container">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'home'%}">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'store'%}">Shop</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+            </ol>
+        </div><!-- End .container -->
+    </nav><!-- End .breadcrumb-nav -->
+
+    <div class="page-content">
+        <div class="checkout">
+            <div class="container">
+                {% comment %} {% include "alert.html" %} {% endcomment %}
+                <div>
+                    {% if messages %}
+                        <div >
+                            {% for message in messages %}
+                                <span style="color: white; background: #c96; padding: 3px;"> * {{ message }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <form id="razorpay-form" action="{% url 'place_order' %}" method="POST">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-lg-9">
+                           
+                            <h2 class="checkout-title">Billing Details</h2><!-- End .checkout-title -->
+                            {% comment %} {%for message in messages%}
+                            <h4 style="color: goldenrod">{{message}}</h4>
+                            {% endfor %} {% endcomment %}
+                           
+
+                            
+                            {% if address%}
+                         <div class="form-group">
+                                <p>Default address:</p>
+                                {% comment %} {% for address in existing_addresses %} {% endcomment %}
+                                    <div class="address-box" style="border: 0.5px black solid; height: 200px; padding:10px;">
+                                        <label>
+                                            <input type="radio" id="address-radio-{{ address.id }}" name="address_id" value="{{ address.id }}" class="address-radio" checked ><br>
+                                            <span style="font-size: 18px; margin-left: 20px">{{ address.fname }}</span>
+                                            <span style="font-size: 18px; margin-left: 10px">{{ address.lname }}</span>, <br>
+                                            <span style="font-size: 18px; margin-left: 20px">{{ address.address }}</span>, <br>
+                                            <span style="font-size: 18px; margin-left: 20px">{{ address.city }}</span>, 
+                                            <span style="font-size: 18px; ">{{ address.state}}</span>, 
+                                            <span style="font-size: 18px; ">{{ address.country}}</span>, 
+                                            <span style="font-size: 18px; ">{{ address.pincode}}</span>
+                                        </label>
+                                    </div>
+                                {% comment %} {% endfor %} {% endcomment %}
+                            </div> 
+                            {% endif %}
+
+                            <!-- Ship to Different Address Button -->
+                            <a id="ship-to-different-address" class="btn btn-outline-primary"> +Add Address</a>
+
+                            <!-- New address form fields (hidden by default) -->
+                            <div class="row col-ld-12" id="address-form" style="display: none;">
+                              
+                                <div class="col-sm-10">
+                                    <label>First Name *</label>
+                                    <input type="text" name="fname" class="form-control" >
+                                </div><!-- End .col-sm-6 -->
+                                <div class="col-sm-10">
+                                    <label>Last Name *</label>
+                                    <input type="text" name="lname" class="form-control" >
+                                </div><!-- End .col-sm-6 -->
+
+                                <!-- Other address fields like country, street address, city, state, pincode, phone, email, etc. -->
+                                <div class="col-10">
+                                    <label>Country *</label>
+                                    <input type="text" name="country" class="form-control" >
+                                </div><!-- End .col-12 -->
+
+                                <div class="col-10">
+                                    <label>Street address *</label>
+                                    <input type="text" name="address" class="form-control" placeholder="House number and Street name" >
+                                </div><!-- End .col-12 -->
+
+                                {% comment %} <div class="col-12">
+                                    <input type="text" name="address2" class="form-control" placeholder="Appartments, suite, unit etc ..." required>
+                                </div><!-- End .col-12 --> {% endcomment %}
+
+                                <div class="col-sm-10">
+                                    <label>Town / City *</label>
+                                    <input type="text" name="city" class="form-control" >
+                                </div><!-- End .col-sm-6 -->
+
+                                <div class="col-sm-10">
+                                    <label>State </label>
+                                    <input type="text" name="state" class="form-control" >
+                                </div><!-- End .col-sm-6 -->
+
+                                <div class="col-sm-10">
+                                    <label>Postcode / ZIP *</label>
+                                    <input type="text" name="pincode" class="form-control" >
+                                </div><!-- End .col-sm-6 -->
+
+                                <div class="col-sm-10">
+                                    <label>Phone *</label>
+                                    <input type="tel" name="phone" class="form-control" >
+                                </div><!-- End .col-sm-6 -->
+
+                                <div class="col-10">
+                                    <label>Email address *</label>
+                                    <input type="email" name="email" class="form-control" >
+                                </div><!-- End .col-12 -->
+
+                                <div class="col-10">
+                                    <label>Order notes (optional)</label>
+                                    <textarea class="form-control" name="order_notes" cols="30" rows="4" placeholder="Notes about your order, e.g. special notes for delivery"></textarea>
+                                </div><!-- End .col-12 -->
+                            </div>
+
+                            <!-- Rest of the form fields -->
+
+                            {% comment %} <button type="submit" class="btn btn-primary">Place Order</button> {% endcomment %}
+                        </div><!-- End .col-lg-9 -->
+                        <aside class="col-lg-3">
+                            <div class="summary">
+                                <h3 class="summary-title">Your Order</h3><!-- End .summary-title -->
+
+                                <table class="table table-summary">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            {% comment %} <th>Qty</th> {% endcomment %}
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        {% for item in cart_items%}
+                                    
+                                        <tr>
+                                            <td><a href="#">{{ item.product.name|truncatechars:20}} </a>&nbsp;&nbsp;  x {{item.product_qty}}</td>
+                                           
+                                            <td>${{item.total_cost | stringformat:'d'}}</td>
+                                        </tr>
+                                        {% endfor %}
+
+                                        {% if cart_items.0.coupon %}
+                                        <tr class="summary-shipping">
+                                            <td>Coupon applied :</td>
+                                            <td>&nbsp;</td>
+                                        </tr>
+                                        <tr class="summary-shipping-row">
+                                                <td style="background:violet" class="text-center">{{ cart_items.0.coupon.coupon_code|upper }}</td>
+                                                <td><a href="{% url 'remove_coupon' cart_items.0.id %}"><i class="icon-close"></i></a></td>
+                                           </tr>
+                                           <tr class="summary-shipping">
+                                            <td>Coupon discount :&nbsp;</td>
+                                            <td>${{ cart_items.0.coupon.discound_amount}} </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if total_saved_amount > 0 %}
+                                        <tr class="summary-shipping">
+                                            <td>Saved Amount (Offers):</td>
+                                            <td>${{ total_saved_amount|stringformat:'d' }}</td>
+                                        </tr><!-- End .summary-shipping -->
+                                        {% endif %}
+                                         
+                                        <tr class="summary-subtotal">
+                                            <td>Subtotal:</td>
+                                            <td>${{total_price | stringformat:'d'}}</td>
+                                        </tr><!-- End .summary-subtotal -->
+                                        <tr>
+                                            <td>Shipping:</td>
+                                            
+                                            <td>Free shipping</td>
+                                        </tr>
+                                       
+                                        <tr class="summary-total">
+                                            <td>Total:</td>
+                                            <input type="hidden" value="{{total_price}}" name="total_price">
+                                            <td>${{ total_price | stringformat:'d'}}</td>
+                                        </tr><!-- End .summary-total -->
+                                      
+                                    </tbody>
+                                </table><!-- End .table table-summary -->
+{% comment %} =================================================================================== {% endcomment %}
+
+
+                           
+
+                                <button type="submit" class="btn  btn-success w-100 mt-2"> 
+                                {% comment %} <button type="submit" class="btn btn-outline-primary-2 btn-order btn-block">  {% endcomment %}
+                                    <input type="hidden" value="COD" name="payment_mode">
+                                    <span class="btn-text">Place Order</span>
+                                    <span class="btn-hover-text">Proceed to Checkout</span>
+                                </button>
+                                {% comment %} <button type="button" class="btn btn-success payWithRazorpay w-100 mt-2">Pay with Razorpay</button> {% endcomment %}
+                                <button type="button" class="btn btn-success payWithRazorpay w-100 mt-2" onclick="submitRazorpayForm()">Pay with Razorpay</button>
+                                <button type="button" class="btn btn-success payWithWallet w-100 mt-2">Pay with Wallet</button>
+
+                            </div><!-- End .summary -->
+                        </aside><!-- End .col-lg-3 -->
+                    </div><!-- End .row -->
+                </form>
+            </div><!-- End .container -->
+        </div><!-- End .checkout -->
+    </div><!-- End .page-content -->
+</main><!-- End .main -->
+
+{% comment %} <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script> {% endcomment %}
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+ <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const shipToDifferentAddressButton = document.getElementById("ship-to-different-address");
+        const addressForm = document.getElementById("address-form");
+        const addressRadios = document.querySelectorAll(".address-radio");
+
+        shipToDifferentAddressButton.addEventListener("click", function () {
+            addressForm.style.display = "block";
+
+            // Unselect the radio buttons for existing addresses
+            addressRadios.forEach(function (radio) {
+                radio.checked = false;
+            });
+        });
+        const walletButton = document.querySelector(".payWithWallet");
+        walletButton.addEventListener("click", payWithWallet);
+    });
+
+    {% comment %}   PAY WITH WALLET {% endcomment %}
+    function payWithWallet() {
+        // Implement AJAX to check wallet balance and process payment
+        // Send a request to a Django view to check the wallet balance
+        // If balance is sufficient, proceed with placing the order
+        // Update the payment_mode to "paid by wallet" in the form
+
+        // Example using jQuery for AJAX (make sure to include jQuery in your project)
+        $.ajax({
+            url: '{% url "check_wallet_balance" %}',
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    // Wallet balance is sufficient, update the form and submit
+                    $('input[name="payment_mode"]').val('paid by wallet');
+                    $('#razorpay-form').submit();  // Assuming your form has an ID 'razorpay-form'
+                } else {
+                    // Wallet balance is not sufficient, display an alert or handle accordingly
+                    alert('Wallet balance is not sufficient.');
+                }
+            },
+            error: function() {
+                // Handle errors
+              
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Insufficient Balance.',
+                    text: 'Wallet balance is not sufficient.',
+                });
+            }
+        });
+    }
+
+
+
+    
+</script>
+
+{% endblock content %}
+{% block scripts %}
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script> 
+{% endblock scripts %}

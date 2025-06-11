@@ -1,0 +1,277 @@
+{% extends 'partials/admin_base.html' %}
+{% block content %}
+
+
+
+<div class="main-panel">
+    <div class="content-wrapper">
+        <div class="row"></div>
+        <div class="row">
+
+        </div>
+        <h2 class="text-center text-light">Sales Analysis Report</h2>
+
+        <div class="row mt-4">
+            <div class="col-lg-6 grid-margin stretch-card">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">Sales Portfolio</h4>
+                        <canvas id="areaChart" style="height: 250px;"></canvas>
+                        <div class="col-10 mt-3">
+                            <button onclick="SalesPortfolio('week')" class="btn btn-sm btn-outline-info">This week</button>
+                            <button onclick="SalesPortfolio('month')" class="btn btn-sm btn-outline-info">This month</button>
+                            <button onclick="SalesPortfolio('year')" class="btn btn-sm btn-outline-info">This year</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="col-lg-6 grid-margin stretch-card">
+                <div class="card">
+                  
+                    <div class="card-body">
+                        <h4 class="card-title">Most sold products</h4>
+                        <canvas id="barChart" style="height:230px"></canvas>
+                        <div style="display: none;">
+                            {% for product in most_sold_products %}
+                                <input class="product" value="{{ product.product__name }}">
+                                <input class="count" value="{{ product.total_sold }}">
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div> 
+        </div>
+        <div>
+            <p class="mx-auto">Filter Report :</p>
+            <div class="form-group row  col-12 w-100 d-flex justify-content-between">
+                <div class="col-3 ">
+                    <h3>Total Profit : {{total_profit}}
+                    </h3>
+                </div>
+               
+                <div class=" col-3 d-flex flex-row">
+                    <form class="d-flex flex-row" action="{% url 'admin_panel:sales_report' %}" method="post">
+
+                         {% csrf_token %} 
+                        <h2 class="mdi mdi-calendar-clock"></h2>
+                        <input
+                            type="text"
+                            autocomplete="off"
+                            id="start-date"
+                            class="form-control text-light m-1 flatpickr"
+                            name="start"
+                            placeholder="From"
+                            required
+                        >
+                        <input
+                            type="text"
+                            autocomplete="off"
+                            id="end-date"
+                            class="form-control text-light m-1 flatpickr"
+                            name="end"
+                            placeholder="To"
+                            required
+                        >
+                        <button type="submit" class="btn btn-inverse-primary m-2">Filter</button>
+                    </form>
+                </div>
+                
+                
+
+            </div>
+        </div>
+
+
+   <div class="row">
+            <div class="col-md-4 grid-margin stretch-card">
+                <div class="card">
+                    <div class="card-body">
+                        <h4 class="card-title">Sold Stocks</h4>
+                        {% if sold_items %}
+                            {% for item in sold_items %}
+                                <div class="bg-gray-dark d-flex d-md-block d-xl-flex flex-row py-3 px-4 px-md-3 px-xl-4 rounded mt-3">
+                                    <div class="text-md-center text-xl-left">
+                                        <h6 class="mb-1">{{ item.product__name }}</h6>
+                                        <p class="text-muted mb-0">Total Sold: {{ item.total_sold }} units</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <h6 class="text-center text-light mt-5">No Stock Sold</h6>
+                        {% endif %}
+                    </div>
+                    
+                    
+                </div>
+
+            </div>
+
+            <div class="col-md-8 grid-margin stretch-card">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex flex-row justify-content-between">
+                            <h4 class="card-title mb-1">product wise profitability analysis</h4>
+                            <div class="dropdown mt-2">
+                                <button type="button" class="btn btn-inverse-info dropdown-toggle" id="dropdownMenuIconButton7" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="mdi mdi-download"></i>
+                                </button>
+                                <div class="dropdown-menu" aria-labelledby="dropdownMenuIconButton7">
+                                    <h6 class="dropdown-header">Download Report</h6>
+                                    <a class="dropdown-item text-white" href="{% url 'admin_panel:sales_report_excel' %}?start={{ start_date|default:'' }}&end={{ end_date|default:'' }}" id="excelDownload">Excel File</a>
+                                    <a class="dropdown-item text-white" href="{% url 'admin_panel:sales_report_pdf' %}?start={{ start_date|default:'' }}&end={{ end_date|default:'' }}" id="pdfDownload">PDF File</a>
+                                </div>
+                            </div>
+                            
+                        </div>
+                        <div class="row">
+                            <div class="table-responsive card">
+                                {% if stock_items %}
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Quantity</th>
+                                                <th>Profit</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                         
+                                            {% for product_data in stock_items %}
+    <tr>
+        <td>{{ product_data.product_name }}</td>
+        <td>{{ product_data.total_sold }}</td>
+        <td>{{ product_data.profit }}</td>
+    </tr>
+{% endfor %}
+
+                                        </tbody>
+                                    </table>
+                                {% else %}
+                                    <h6 class="text-center text-light mt-5">No Stock Profits</h6>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        
+                        
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+
+    </div>
+</div>
+
+
+
+
+{% endblock content %}
+
+
+
+{% block scripts %}
+<script>
+
+    var ctx = document.getElementById('areaChart').getContext('2d');
+    var areaChart;
+    
+    function SalesPortfolio(period) {
+        
+        fetch(/admin_panel/get_sales_data/${period}/)
+        .then(response => {
+           
+            return response.json();
+        })
+            .then(data => {
+                // Update the chart
+                updateChart(data.labels, data.data);
+            })
+            .catch(error => console.error('Error fetching sales data:', error));
+    }
+    
+    function updateChart(labels, data) {
+        if (typeof areaChart === 'undefined') {
+            // Create a new chart if it doesn't exist
+            areaChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Sales',
+                        data: data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        } else {
+            // If the chart exists, update the data
+            areaChart.data.labels = labels;
+            areaChart.data.datasets[0].data = data;
+            areaChart.update();
+        }
+    }
+    
+   
+    SalesPortfolio('week');
+   
+    
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var products = document.querySelectorAll('.product');
+        var counts = document.querySelectorAll('.count');
+
+        var productsArray = Array.from(products).map(function (product) {
+            return product.value;
+        });
+
+        var countsArray = Array.from(counts).map(function (count) {
+            return parseInt(count.value);
+        });
+
+        var ctx = document.getElementById('barChart').getContext('2d');
+        var barChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: productsArray,
+                datasets: [{
+                    label: 'Most Sold Products',
+                    data: countsArray,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
+<script>
+    flatpickr('.flatpickr', {
+        dateFormat: "Y-m-d",  // Set your desired date format
+    });
+</script>
+
+{% endblock scripts %}

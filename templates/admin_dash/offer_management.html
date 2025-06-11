@@ -1,0 +1,74 @@
+{% extends "admin_dash/dash.html" %}
+{%load static %}
+{% block content %}
+
+
+<div class="main-panel">
+    <div class="content-wrapper">
+      <div class="page-header">
+        <h4 class="card-title">OFFER &nbspMANAGEMENT</h4>
+      </div>
+      {% comment %} <div class="row"> {% endcomment %}
+        <div class="col-lg-12 grid-margin stretch-card">
+          <div class="card">
+            {% include "alert.html" %}
+            <div class="card-body">
+              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_offer' %}">Add New Offer</a></label>
+              <label class="badge badge-info"><a style="color : white;" href="{% url 'view_category_offers' %}">Apply Offers for Category</a></label>
+              <label class="badge badge-info"><a style="color : white;" href="{% url 'viwe_product_offers' %}">Apply Offers for Product</a></label>
+                 <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Id</th>
+                      <th>Title</th>
+                      <th>Description</th>
+                      <th>Ending Date</th>
+                      <th>Discount %</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                   {% for offer in offers%}
+                    <tr>
+                      <td>{{forloop.counter}}</td>
+                      <td>{{offer.title}}</td>
+                      <td>{{offer.description }}</td>
+                      <td>{{offer.end_date }}</td>
+                      <td>{{offer.discount_percentage|stringformat:'d' }} %</td>
+                      <td style="color: {% if offer.is_valid %}green{% else %}red{% endif %}">
+                        {% if offer.is_valid %}
+                            Valid
+                        {% else %}
+                            Expired
+                        {% endif %}
+                    </td>
+                    <td>
+                      <label class="badge {% if offer.is_block %}badge-success{% else %}badge-danger{% endif %}">
+                          <a href="{% url 'delete_offer' offer.id %}" style="color: white;">
+                              {% if offer.is_block %}
+                                  Unblock
+                              {% else %}
+                                  Block
+                              {% endif %}
+                          </a>
+                      </label>
+                  </td>                  </tr>
+                    {%endfor%}   
+                   </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+     </div>
+
+  </div>
+  </div>
+
+
+{% endblock content %}
+
+

@@ -1,0 +1,99 @@
+
+
+{% extends "admin_dash/dash.html" %}
+{%load static %}
+{% block content %}
+
+
+<div class="main-panel">
+    <div class="content-wrapper">
+      <div class="page-header">
+        <h4 class="card-title">SALES REPORTS</h4>
+        {% if start_date and end_date %}
+        <p>Selected Date Range: {{ start_date|date:'Y-m-d' }} to {{ end_date|date:'Y-m-d' }}</p>
+    {% endif %}
+        {% comment %} <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="#">Filter</a></li>
+          </ol>
+        </nav>  {% endcomment %}
+      </div>
+        <div class="col-lg-12 grid-margin stretch-card">
+          <div class="card">
+            <div class="card-body">
+              <div>
+                {% comment %} <button class="btn btn-info" >Download </button> {% endcomment %}
+                <div>
+                  {% if orders%}
+                  <button class="btn btn-info" onclick="window.location='{% url "download_pdf" %}?time_range={{ selected_time_range }}'">Download PDF</button>
+                  {% endif %}
+              </div>
+              
+              </div>
+                <div  class="form-group text-right">
+                    <form method="get" action="{% url 'view_sales_reports' %}">
+                    
+                    <select name="time_range" id="time_range" class="form-control  col-sm-2 d-inline">
+                     <option value="all" {% if selected_time_range == 'all' %}selected{% endif %}>All</option>
+                      <option value="day" {% if selected_time_range == 'day' %}selected{% endif %}>Day</option>
+                      <option value="week" {% if selected_time_range == 'week' %}selected{% endif %}>Week</option>
+                      <option value="month" {% if selected_time_range == 'month' %}selected{% endif %}>Month</option>
+                      <option value="year" {% if selected_time_range == 'year' %}selected{% endif %}>Year</option>
+                    </select>
+                    <button class="btn btn-primary" type="submit">Apply Filter</button>
+                  </form> 
+                  
+                </div>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Order Id</th>
+                      <th>Date</th>
+                      <th>Customer</th>
+                      <th>Product X qty</th>
+                      <th>Total amount</th>
+                      {% comment %} <th>Actions</th>  {% endcomment %}
+                    </tr>
+                  </thead>
+                  {% if orders%}
+                  <tbody>
+                    {% for order in orders %}
+                    {% for item in order.orderitem_set.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ order.tracking_no }}</td>
+                            {% comment %} <td>{{ order.created_at }}</td> {% endcomment %}
+                            <td>{{ order.created_at|date:'Y-m-d' }}</td>
+
+                            <td>{{ order.user.username }}</td>
+                            <td>{{ item.product.name |truncatechars:16}} X {{ item.quantity }}</td>
+                            <td>{{ item.total_price |stringformat:'d' }}</td>
+                            {% comment %} <td><a href="">Download</a></td> {% endcomment %}
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+                   </tbody> 
+                   {% else %}
+                   <tbody>
+                    <tr>
+                      <td colspan="7"><h4>No orders</h4></td>
+                    </tr>
+                  </tbody>
+                  {% endif %}
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+     </div>
+
+  </div>
+  </div>
+
+  
+{% endblock content %}
+
+

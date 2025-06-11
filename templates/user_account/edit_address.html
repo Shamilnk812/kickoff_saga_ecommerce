@@ -1,0 +1,80 @@
+{% extends "user_account/user_base_account.html" %}
+{% block account %}
+<div class="container ">
+<div class="">
+    <form action="{% url 'update_address' address.id %}" method="POST">
+        {% csrf_token %}
+    <div class="col-lg-9">
+        <h2 class="checkout-title">Billing Details</h2><!-- End .checkout-title -->
+            <div class="row">
+                <div class="col-sm-6">
+                    <label>First Name *</label>
+                    <input type="text" name="fname" value="{{address.fname}}"  class="form-control" >
+                </div><!-- End .col-sm-6 -->
+
+                <div class="col-sm-6">
+                    <label>Last Name *</label>
+                    <input type="text" name="lname" value="{{address.lname}}"   class="form-control" >
+                </div><!-- End .col-sm-6 -->
+            </div><!-- End .row -->
+            {% comment %} 
+            <label>Company Name (Optional)</label>
+            <input type="text" class="form-control"> {% endcomment %}
+
+            <label>Country *</label>
+            <input type="text" name="country" value="{{address.country}}"  class="form-control" >
+
+            <label>Street address *</label>
+            <input type="text" name="address" value="{{address.address}}"  class="form-control" placeholder="House number and Street name" >
+            {% comment %} <input type="text" name="address" class="form-control" placeholder="Appartments, suite, unit etc ..." > {% endcomment %}
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <label>Town / City *</label>
+                    <input type="text" name="city" value="{{address.city}}"  class="form-control" >
+                </div><!-- End .col-sm-6 -->
+
+                <div class="col-sm-6">
+                    <label>State / County *</label>
+                    <input type="text" name="state" value="{{address.state}}"  class="form-control" >
+                </div><!-- End .col-sm-6 -->
+            </div><!-- End .row -->
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <label>Postcode / ZIP *</label>
+                    <input type="text" name="pincode" value="{{address.pincode}}"  class="form-control" >
+                </div><!-- End .col-sm-6 -->
+
+                <div class="col-sm-6">
+                    <label>Phone *</label>
+                    <input type="tel" name="phone" value="{{address.phone}}"  class="form-control" >
+                </div><!-- End .col-sm-6 -->
+            </div><!-- End .row -->
+
+            <label>Email address *</label>
+            <input type="email" name="email" value="{{address.email}}"  class="form-control" >
+
+
+            <label>Order notes (optional)</label>
+            <textarea class="form-control" cols="30" value="{{address.message}}"  rows="4" placeholder="Notes about your order, e.g. special notes for delivery"></textarea>
+       </div><!-- End .col-lg-9 -->
+       <button type="submit" class="btn btn-success " style="margin-left: 350px">Save Changes</button>
+    </form>
+</div><!-- End .col-lg-9 -->
+</div><!-- End .col-lg-9 -->
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    {% if messages %}
+        {% for message in messages %}
+            Swal.fire({
+                icon: "{% if message.tags == 'success' %}success{% else %}error{% endif %}",
+                title: "{{ message.tags }}",
+                text: "{{ message }}",
+            });
+        {% endfor %}
+    {% endif %}
+</script>
+{% endblock account %}

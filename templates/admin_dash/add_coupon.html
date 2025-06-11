@@ -1,0 +1,44 @@
+{% extends 'admin_dash/dash.html'%}
+{% load static%}
+{% block content %}
+
+<div class="main-panel">
+    <div class="content-wrapper">
+      <div class="page-header">
+        <h3 class="page-title">Coupon Management</h3>
+        
+      </div>
+      
+        <div class="col-md-6 grid-margin stretch-card">
+          <div class="card">
+            <div class="card-body">
+              <h4 class="card-title">Add Coupon</h4>
+              {% for message in messages%}
+              <p style="color:red;">{{message}}</p>
+              {% endfor %}
+              <form class="forms-sample" action="{% url 'add_coupon'%}" method='POST'>
+                {% csrf_token %}
+                
+                <div class="form-group">
+                  <label for="exampleInputUsername1">Coupon Code</label>
+                  <input type="text" name="coupon" class="form-control" id="exampleInputUsername1" placeholder=" Enter code">
+               </div>
+               <div class="form-group">
+                  <label for="exampleInputUsername1">Minimum amount</label>
+                  <input type="text" name="minimum_amount" class="form-control" id="exampleInputUsername1" placeholder="minimum amount">
+               </div>
+               <div class="form-group">
+                  <label for="exampleInputUsername1">Discount amount</label>
+                  <input type="text" name="discount_amount" class="form-control" id="exampleInputUsername1" placeholder="discount amount">
+               </div>
+                   <button type="submit" class="btn btn-success mr-2"> Add </button>
+                   <button class="btn btn-dark" > <a href="{% url 'view_coupons'%}">Cancel</a></button>
+              </form>
+             
+            </div>
+          </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

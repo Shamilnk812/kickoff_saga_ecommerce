@@ -1,0 +1,29 @@
+{% extends "n.html" %}
+{% load static %}
+{% block content %}
+
+<main class="main">
+<div class="error-content text-center" style="background-image: url(assets/images/backgrounds/error-bg.jpg)">
+    <div class="container">
+        <h3 class="error-title">You Order has been Successfully placed</h3><!-- End .error-title -->
+        <p>Thank you , the page you've requested is not available.</p>
+        <a href="{% url 'store'%}" class="btn btn-outline-primary-2 btn-minwidth-lg">
+            <span>BACK TO SHOPPING</span>
+            <i class="icon-long-arrow-right"></i>
+        </a>
+    </div><!-- End .container -->
+</div><!-- End .error-content text-center -->
+</main>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
+
+    <script>
+        Swal.fire({
+          title: 'Order Placed Successfully',
+          text: 'Thank you for your order!',
+          icon: 'success',
+          position: 'center',  // You can change the position to your preference
+          showConfirmButton: false,  // Hide the "OK" button
+          timer: 3000  // Set the duration in milliseconds (e.g., 3000ms = 3 seconds)
+        });
+      </script>
+{% endblock content %}

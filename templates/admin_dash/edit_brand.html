@@ -1,0 +1,43 @@
+{% extends "admin_dash/dash.html" %}
+{% load static %}
+{% block content %}
+
+
+<div class="main-panel">
+    <div class="content-wrapper">
+        <div class="page-header">
+            <h3 class="page-title">Edit Brands</h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#">Forms</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Form elements</li>
+                </ol>
+            </nav>
+        </div>
+  
+        <div class="col-md-6 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Edit Brands</h4>
+                    <p class="card-description">Basic form layout</p>
+                    <form class="forms-sample" method="POST" action="{% url 'update_brand' brand.id %}">
+                        {% csrf_token %}
+  
+                        <div class="form-group">
+                            <label for="id_name">Brand name</label>
+                            <input type="text" name="brand_name" value="{{brand.name}}" class="form-control" id="id_name" placeholder="Enter Brand name">
+                        </div>
+                        <button type="submit" class="btn btn-success mr-2">Save Changes</button>
+                        <a href="{% url 'brand_management'%}" class="btn btn-dark">Cancel</a>
+                    </form>
+  
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+{% endblock content %}
+

@@ -1,0 +1,358 @@
+{% extends "admin_dash/dash.html" %}
+{%load static %}
+{% block content %}
+
+
+<div class="main-panel">
+  <div class="content-wrapper">
+    <div class="page-header">
+    <h3 class="page-title">Dashboard</h3>  
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+       
+        <li class="nav-item w-100">
+          <a class="btn btn-info" href="{% url 'view_sales_reports'%}">View Sales reports</a>
+        </li>
+      </ol>
+    </nav>
+  </div>
+  <div class="row">
+    <div class="col-sm-4 grid-margin">
+      <div class="card">
+        <div class="card-body">
+          <h5> Total Revenue</h5>
+          <div class="row">
+            <div class="col-8 col-sm-12 col-xl-8 my-auto">
+              <div class="d-flex d-sm-block d-md-flex align-items-center">
+                <h2 class="mb-0">$ {{total_revenue}}</h2>
+                {% comment %} <p class="text-success ml-2 mb-0 font-weight-medium">+3.5%</p> {% endcomment %}
+              </div>
+              {% comment %} <h6 class="text-muted font-weight-normal">11.38% Since last month</h6> {% endcomment %}
+            </div>
+            <div class="col-4 col-sm-12 col-xl-4 text-center text-xl-right">
+              <i class="icon-lg mdi mdi-codepen text-primary ml-auto"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4 grid-margin">
+      <div class="card">
+        <div class="card-body">
+          <h5>Monthly Revenue</h5>
+          <div class="row">
+            <div class="col-8 col-sm-12 col-xl-8 my-auto">
+              <div class="d-flex d-sm-block d-md-flex align-items-center">
+                <h2 class="mb-0">$ {{monthly_revenue}}</h2>
+                {% comment %} <p class="text-success ml-2 mb-0 font-weight-medium">+8.3%</p> {% endcomment %}
+              </div>
+              {% comment %} <h6 class="text-muted font-weight-normal"> 9.61% Since last month</h6> {% endcomment %}
+            </div>
+            <div class="col-4 col-sm-12 col-xl-4 text-center text-xl-right">
+              <i class="icon-lg mdi mdi-wallet-travel text-danger ml-auto"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-4 grid-margin">
+      <div class="card">
+        <div class="card-body">
+          <h5>Total Sales</h5>
+          <div class="row">
+            <div class="col-8 col-sm-12 col-xl-8 my-auto">
+              <div class="d-flex d-sm-block d-md-flex align-items-center">
+                <h2 class="mb-0">{{total_sales}}</h2>
+                {% comment %} <p class="text-danger ml-2 mb-0 font-weight-medium">-2.1% </p> {% endcomment %}
+              </div>
+              {% comment %} <h6 class="text-muted font-weight-normal">2.27% Since last month</h6> {% endcomment %}
+            </div>
+            <div class="col-4 col-sm-12 col-xl-4 text-center text-xl-right">
+              <i class="icon-lg mdi mdi-monitor text-success ml-auto"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+          <div class="row">
+            <div class="col-md-4 grid-margin stretch-card">
+              <div class="card">
+                <div class="card-body">
+                  <h4 class="card-title">Transaction History</h4>
+                  <div  style="width: 300px; height: 300px;">
+                  <canvas id="paymentModeChart"></canvas>
+                  </div>
+                  {% comment %} <canvas id="transaction-history" class="transaction-chart"></canvas> {% endcomment %}
+                  <div class="bg-gray-dark d-flex d-md-block d-xl-flex flex-row py-3 px-4 px-md-3 px-xl-4 rounded mt-3">
+                    <div class="text-md-center text-xl-left">
+                      <h6 class="mb-1">Cash On Delivery</h6>
+                    </div>
+                    <div class="align-self-center flex-grow text-right text-md-center text-xl-right py-md-2 py-xl-0">
+                      <h6 class="font-weight-bold mb-0">{{cod_count}}</h6>
+                    </div>
+                  </div>
+                  <div class="bg-gray-dark d-flex d-md-block d-xl-flex flex-row py-3 px-4 px-md-3 px-xl-4 rounded mt-3">
+                    <div class="text-md-center text-xl-left">
+                      <h6 class="mb-1">Online Payment</h6>
+                    </div>
+                    <div class="align-self-center flex-grow text-right text-md-center text-xl-right py-md-2 py-xl-0">
+                      <h6 class="font-weight-bold mb-0">{{razorpay_count}}</h6>
+                    </div>
+                  </div>
+                  <div class="bg-gray-dark d-flex d-md-block d-xl-flex flex-row py-3 px-4 px-md-3 px-xl-4 rounded mt-3">
+                    <div class="text-md-center text-xl-left">
+                      <h6 class="mb-1">Wallet</h6>
+                    </div>
+                    <div class="align-self-center flex-grow text-right text-md-center text-xl-right py-md-2 py-xl-0">
+                      <h6 class="font-weight-bold mb-0">{{wallet_count}}</h6>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% comment %} <div class="col-lg-8 grid-margin stretch-card">
+              <div class="card">
+                  <div class="card-body">
+                      <h4 class="card-title">Sales Portfolio</h4>
+                      <canvas id="areaChart" style="height: 250px;"></canvas>
+                      <div class="col-10 mt-3">
+                          <button onclick="SalesPortfolio('week')" class="btn btn-sm btn-outline-info">This week</button>
+                          <button onclick="SalesPortfolio('month')" class="btn btn-sm btn-outline-info">This month</button>
+                          <button onclick="SalesPortfolio('year')" class="btn btn-sm btn-outline-info">This year</button>
+                      </div>
+                  </div>
+              </div>
+          </div> {% endcomment %}
+            <div class="col-lg-8 grid-margin stretch-card">
+              <div class="card"> 
+                {% comment %} <div class="form-group">
+                  <label for="chartFilter">Filter Chart:</label>
+                  <select id="chartFilter" class="form-control">
+                      <option value="monthly" selected>Monthly</option>
+                      <option value="yearly">Yearly</option>
+                      <option value="weekly">Weekly</option>
+                  </select>
+              </div> {% endcomment %}
+              {% comment %} <div class="form-group">
+                <label for="chartFilter">Filter Chart:</label>
+                <select id="chartFilter" class="form-control">
+                    <option value="monthly" selected>Monthly</option>
+                    <option value="yearly">Yearly</option>
+                </select>
+            </div> {% endcomment %}
+            {% comment %} <div class="form-group">
+              <label for="chartFilter">Filter Chart:</label>
+              <select id="chartFilter" class="form-control">
+                <option value="monthly" selected>Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div> {% endcomment %}
+            {% comment %} <button id="updateChartButton" class="btn btn-primary">Update Chart</button> {% endcomment %}
+      
+                {% comment %} <div class="card-body">
+                  <h4 class="card-title">Sales Report chart</h4>
+                  <canvas id="orderItemChart" style="height:230px"></canvas>
+                </div> {% endcomment %}
+                <h4 class="card-title">Sales Portfolio</h4>
+                <canvas id="areaChart" style="height:700px; width:300px;"></canvas>
+                <div class="col-10 mt-3">
+                    <button onclick="SalesPortfolio('week')" class="btn btn-sm btn-outline-info">This week</button>
+                    <button onclick="SalesPortfolio('month')" class="btn btn-sm btn-outline-info">This month</button>
+                    <button onclick="SalesPortfolio('year')" class="btn btn-sm btn-outline-info">This year</button>
+                </div>
+              </div>
+            </div>
+          </div> 
+
+          <div class="row">
+            <div class="col-sm-4 grid-margin">
+              <div class="card">
+                <div class="card-body">
+                  <h5>Total Customers</h5>
+                  <div class="row">
+                    <div class="col-8 col-sm-12 col-xl-8 my-auto">
+                      <div class="d-flex d-sm-block d-md-flex align-items-center">
+                        <h2 class="mb-0">{{total_customers}}</h2>
+                        {% comment %} <p class="text-success ml-2 mb-0 font-weight-medium">+3.5%</p> {% endcomment %}
+                      </div>
+                      {% comment %} <h6 class="text-muted font-weight-normal">11.38% Since last month</h6> {% endcomment %}
+                    </div>
+                    <div class="col-4 col-sm-12 col-xl-4 text-center text-xl-right">
+                      <i class="icon-lg mdi mdi-codepen text-primary ml-auto"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-4 grid-margin">
+              <div class="card">
+                <div class="card-body">
+                  <h5>Total Orders</h5>
+                  <div class="row">
+                    <div class="col-8 col-sm-12 col-xl-8 my-auto">
+                      <div class="d-flex d-sm-block d-md-flex align-items-center">
+                        <h2 class="mb-0">{{total_orders}}</h2>
+                        {% comment %} <p class="text-success ml-2 mb-0 font-weight-medium">+8.3%</p> {% endcomment %}
+                      </div>
+                      {% comment %} <h6 class="text-muted font-weight-normal"> 9.61% Since last month</h6> {% endcomment %}
+                    </div>
+                    <div class="col-4 col-sm-12 col-xl-4 text-center text-xl-right">
+                      <i class="icon-lg mdi mdi-wallet-travel text-danger ml-auto"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-4 grid-margin">
+              <div class="card">
+                <div class="card-body">
+                  <h5>Total Products</h5>
+                  <div class="row">
+                    <div class="col-8 col-sm-12 col-xl-8 my-auto">
+                      <div class="d-flex d-sm-block d-md-flex align-items-center">
+                        <h2 class="mb-0">{{total_products}} Products</h2>
+                        {% comment %} <p class="text-danger ml-2 mb-0 font-weight-medium">-2.1% </p> {% endcomment %}
+                      </div>
+                      {% comment %} <h6 class="text-muted font-weight-normal">2.27% Since last month</h6> {% endcomment %}
+                    </div>
+                    <div class="col-4 col-sm-12 col-xl-4 text-center text-xl-right">
+                      <i class="icon-lg mdi mdi-monitor text-success ml-auto"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+   
+       
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+      // Use counts from the context
+      var codCount = {{ cod_count }};
+      var razorPayCount = {{ razorpay_count }};
+      var walletCount = {{ wallet_count }};
+  
+      var paymentModeChart = new Chart(document.getElementById('paymentModeChart'), {
+          type: 'doughnut',
+          data: {
+              labels: ['COD', 'Online', 'Wallet'],
+              datasets: [{
+                  data: [codCount, razorPayCount, walletCount],
+                  backgroundColor: [
+                      'rgba(255, 99, 132, 0.5)',   // Red for COD
+                      'rgba(54, 162, 235, 0.5)',  // Blue for Razor Pay
+                      'rgba(255, 206, 86, 0.5)'   // Yellow for Wallet
+                  ],
+                  borderColor: [
+                      'rgba(255, 99, 132, 1)',
+                      'rgba(54, 162, 235, 1)',
+                      'rgba(255, 206, 86, 1)'
+                  ],
+                  borderWidth: 1
+              }]
+          },
+          options: {
+              cutout: '30%',  // Adjust this value to control the size of the hole in the center
+              responsive: true,
+              maintainAspectRatio: false
+          }
+      });
+  });
+
+
+  var ctx = document.getElementById('areaChart').getContext('2d');
+  var areaChart;
+  
+  function SalesPortfolio(period) {
+      
+       fetch(`/admin_dash/get_sales_data/${period}/`)    
+       //fetch(/admin_dash/get_sales_data/${period}/) 
+      .then(response => {
+         
+          return response.json();
+      })
+          .then(data => {
+              // Update the chart
+              updateChart(data.labels, data.data);
+          })
+          .catch(error => console.error('Error fetching sales data:', error));
+  }
+  
+  function updateChart(labels, data) {
+      if (typeof areaChart === 'undefined') {
+          // Create a new chart if it doesn't exist
+          areaChart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: labels,
+                  datasets: [{
+                      label: 'Sales',
+                      data: data,
+                      backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                      borderColor: 'rgba(75, 192, 192, 1)',
+                      borderWidth: 1
+                  }]
+              },
+              options: {
+                  scales: {
+                      y: {
+                          beginAtZero: true
+                      }
+                  }
+              }
+          });
+      } else {
+          // If the chart exists, update the data
+          areaChart.data.labels = labels;
+          areaChart.data.datasets[0].data = data;
+          areaChart.update();
+      }
+  }
+  
+ 
+  SalesPortfolio('week');
+
+
+{% comment %} 
+   document.addEventListener('DOMContentLoaded', function () {
+    // Use counts from the context
+    var orderItemChartLabels = {{ order_item_chart_labels|safe }};
+    var orderItemChartData = {{ order_item_chart_data|safe }};
+
+    var orderItemChart = new Chart(document.getElementById('orderItemChart'), {
+        type: 'bar',
+        data: {
+            labels: orderItemChartLabels,
+            datasets: [{
+                label: 'OrderItem Count',
+                data: orderItemChartData,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                x: {
+                    type: 'category',
+                    labels: orderItemChartLabels,
+                },
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+});  {% endcomment %}
+  
+  </script>
+
+ 
+
+{% endblock %}

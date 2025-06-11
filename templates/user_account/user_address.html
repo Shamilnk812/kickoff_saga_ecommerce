@@ -1,0 +1,53 @@
+{% extends "user_account/user_base_account.html" %}
+{% block account %}
+<div >
+    {% if new_address%}
+    <p>The following addresses will be used on the checkout page by default.</p>
+  
+    <div class="row">
+        {% for address in new_address%}
+        <div class="col-lg-6">
+            <div class="card card-dashboard">
+              
+                <div class="card-body">
+                    <h3 class="card-title">Address {{forloop.counter}}</h3><!-- End .card-title -->
+                     
+                        <p>{{ address.fname }} {{ address.lname }}<br>
+                            {{ address.email }}<br>
+                            {{ address.phone }}<br>
+                            {{ address.address }}<br>
+                            {{ address.city }}, {{ address.state }}<br>
+                            {{ address.country }} {{ address.pincode }}<br>
+                            {% if address.message %}
+                                Message: {{ address.message }}
+                            {% endif %}
+                    <a href="{% url 'edit_address' address.id %}">Edit <i class="icon-edit"></i></a></p>
+                    <a href="{% url 'delete_user_address' address.id %}">Delete</a>
+            
+                </div><!-- End .card-body -->
+            </div><!-- End .card-dashboard -->
+        </div><!-- End .col-lg-6 -->
+        {% endfor %}
+      
+    </div><!-- End .row -->
+    {% else %}
+    <p>You have no address</p>
+    {% endif %}
+</div><!-- .End .tab-pane --> 
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    {% if messages %}
+        {% for message in messages %}
+            Swal.fire({
+                icon: "{% if message.tags == 'success' %}success{% else %}error{% endif %}",
+                title: "{{ message.tags }}",
+                text: "{{ message }}",
+            });
+        {% endfor %}
+    {% endif %}
+</script>
+{% endblock account %}
