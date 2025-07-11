@@ -153,13 +153,13 @@
                                             
                                         </div><!-- End .product-cat -->
 
-                                        <div class="social-icons social-icons-sm">
+                                        {% comment %} <div class="social-icons social-icons-sm">
                                             <span class="social-label">Share:</span>
                                             <a href="#" class="social-icon" title="Facebook" target="_blank"><i class="icon-facebook-f"></i></a>
                                             <a href="#" class="social-icon" title="Twitter" target="_blank"><i class="icon-twitter"></i></a>
                                             <a href="#" class="social-icon" title="Instagram" target="_blank"><i class="icon-instagram"></i></a>
                                             <a href="#" class="social-icon" title="Pinterest" target="_blank"><i class="icon-pinterest"></i></a>
-                                        </div>
+                                        </div> {% endcomment %}
                                     </div><!-- End .product-details-footer -->
                                 </div><!-- End .product-details -->
                             </div><!-- End .col-md-6 -->
@@ -171,9 +171,9 @@
                             <li class="nav-item">
                                 <a class="nav-link active" id="product-desc-link" data-toggle="tab" href="#product-desc-tab" role="tab" aria-controls="product-desc-tab" aria-selected="true">Description</a>
                             </li>
-                            <li class="nav-item">
+                            {% comment %} <li class="nav-item">
                                 <a class="nav-link" id="product-info-link" data-toggle="tab" href="#product-info-tab" role="tab" aria-controls="product-info-tab" aria-selected="false">Additional information</a>
-                            </li>
+                            </li> {% endcomment %}
                             <li class="nav-item">
                                 <a class="nav-link" id="product-shipping-link" data-toggle="tab" href="#product-shipping-tab" role="tab" aria-controls="product-shipping-tab" aria-selected="false">Shipping & Returns</a>
                             </li>
@@ -185,17 +185,11 @@
                             <div class="tab-pane fade show active" id="product-desc-tab" role="tabpanel" aria-labelledby="product-desc-link">
                                 <div class="product-desc-content">
                                     <h3>Product Information</h3>
-                                    <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros. Nullam malesuada erat ut turpis. Suspendisse urna viverra non, semper suscipit, posuere a, pede. Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim pellentesque felis. Phasellus ultrices nulla quis nibh. Quisque a lectus. Donec consectetuer ligula vulputate sem tristique cursus. </p>
-                                    <ul>
-                                        <li>Nunc nec porttitor turpis. In eu risus enim. In vitae mollis elit. </li>
-                                        <li>Vivamus finibus vel mauris ut vehicula.</li>
-                                        <li>Nullam a magna porttitor, dictum risus nec, faucibus sapien.</li>
-                                    </ul>
+                                    <p>{{product.description}}</P>                                    
 
-                                    <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros. Nullam malesuada erat ut turpis. Suspendisse urna viverra non, semper suscipit, posuere a, pede. Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. Aenean dignissim pellentesque felis. Phasellus ultrices nulla quis nibh. Quisque a lectus. Donec consectetuer ligula vulputate sem tristique cursus. </p>
                                 </div><!-- End .product-desc-content -->
                             </div><!-- .End .tab-pane -->
-                            <div class="tab-pane fade" id="product-info-tab" role="tabpanel" aria-labelledby="product-info-link">
+                            {% comment %} <div class="tab-pane fade" id="product-info-tab" role="tabpanel" aria-labelledby="product-info-link">
                                 <div class="product-desc-content">
                                     <h3>Information</h3>
                                     <p>Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Donec odio. Quisque volutpat mattis eros. Nullam malesuada erat ut turpis. Suspendisse urna viverra non, semper suscipit, posuere a, pede. Donec nec justo eget felis facilisis fermentum. Aliquam porttitor mauris sit amet orci. </p>
@@ -213,7 +207,7 @@
                                     <h3>Size</h3>
                                     <p>one size</p>
                                 </div><!-- End .product-desc-content -->
-                            </div><!-- .End .tab-pane -->
+                            </div><!-- .End .tab-pane --> {% endcomment %}
                             <div class="tab-pane fade" id="product-shipping-tab" role="tabpanel" aria-labelledby="product-shipping-link">
                                 <div class="product-desc-content">
                                     <h3>Delivery & returns</h3>
@@ -418,11 +412,22 @@
             const pid = document.getElementById("pid");
             const btnCart = document.getElementById("btnCart");
             const sizeSelect = document.getElementById("size");
-            const btnWishlist = document.querySelector(".btnwishlist");  // New line
+            const btnWishlist = document.querySelector(".btnwishlist");  
+            const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
 
     
             btnCart.addEventListener("click", function (event) {
                 event.preventDefault();
+
+                if (!isAuthenticated) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Please login',
+                        text: 'You must be logged in to add items to your cart.',
+                    });
+                    return;
+               }
+
     
                 let qty = parseInt(txtQty.value, 10);
                 qty = isNaN(qty) ? 0 : qty;
@@ -442,7 +447,7 @@
                 let postObj = {
                     product_qty: qty,
                     pid: pid.value,
-                    size: selectedSize,  // Add the selected size to the post data
+                    size: selectedSize,  
                 };
     
                 fetch("{% url 'addtocart' %}", {
@@ -466,6 +471,10 @@
                     };
     
                     if (data.status === 'Product added to cart') {
+                        let cartItemsCount = document.getElementById("cart-items-count");
+                        let currentCount = parseInt(cartItemsCount?.innerText || 0);
+                        console.log(currentCount)
+                        cartItemsCount.innerText = currentCount + 1; 
                         alertConfig = {
                             icon: 'success',
                             title: 'Success',
@@ -513,7 +522,15 @@
                     csrfmiddlewaretoken: '{{ csrf_token }}'  // Include CSRF token for Django
                 },
                 success: function(response) {
+
                     if (response.message) {
+                        // Update wishlist count manually
+                        let wishlistCountElement = document.getElementById("wishlist-count");
+                        let currentCount = parseInt(wishlistCountElement?.innerText || 0);
+                        console.log(currentCount)
+                        wishlistCountElement.innerText = currentCount + 1; 
+
+                      
                         const alertConfig = {
                             icon: 'success',
                             title: 'Success',
@@ -521,6 +538,7 @@
                             customContainerClass: 'background-color: #28a745; color: white;',
                         };
                         Swal.fire(alertConfig);
+                        
                     } else {
                         const alertConfig = {
                             icon: 'warning',

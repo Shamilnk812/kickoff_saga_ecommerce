@@ -49,21 +49,21 @@
                         {% endif %}
                     </div>
                     
-                    <div class="form-group">
+                    {% comment %} <div class="form-group">
                         {{ form.stock.label_tag }}
                         {{ form.stock }}
                         {% if form.stock.errors %}
                             <p style="color: red;">{{ form.stock.errors.0 }}</p>
                         {% endif %}
-                    </div>
+                    </div> {% endcomment %}
                     
-                    <div class="form-group">
+                    {% comment %} <div class="form-group">
                         {{ form.status.label_tag }}
                         {{ form.status }}
                         {% if form.status.errors %}
                             <p style="color: red;">{{ form.status.errors.0 }}</p>
                         {% endif %}
-                    </div>
+                    </div> {% endcomment %}
                     
                     <div class="form-group">
                         {{ form.brand.label_tag }}

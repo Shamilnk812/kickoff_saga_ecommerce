@@ -6,12 +6,12 @@
   <div class="content-wrapper">
       <div class="page-header">
           <h3 class="page-title">Edit Product</h3>
-          <nav aria-label="breadcrumb">
+          {% comment %} <nav aria-label="breadcrumb">
               <ol class="breadcrumb">
                   <li class="breadcrumb-item"><a href="#">Forms</a></li>
                   <li class="breadcrumb-item active" aria-current="page">Form elements</li>
               </ol>
-          </nav>
+          </nav> {% endcomment %}
       </div>
      
       <div class="col-md-12 grid-margin stretch-card">
@@ -44,7 +44,7 @@
                             {% endif %}
                         </div>
                         
-                        <div class="form-group">
+                        {% comment %} <div class="form-group">
                             {{ form.stock.label_tag }}
                             {{ form.stock }}
                             {% if form.stock.errors %}
@@ -58,7 +58,7 @@
                             {% if form.status.errors %}
                                 <p style="color: red;">{{ form.status.errors.0 }}</p>
                             {% endif %}
-                        </div>
+                        </div> {% endcomment %}
                         
                         <div class="form-group">
                             {{ form.brand.label_tag }}

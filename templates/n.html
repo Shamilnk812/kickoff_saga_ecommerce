@@ -103,35 +103,57 @@
                             </form>
                         </div><!-- End .header-search -->
                         {% if request.user.is_authenticated %}
-                        <a href="{% url 'account_details'%}" class="wishlist-link">
-                            <i class="icon-user"></i>
-                        </a>
-                        <a href="{% url 'view_wishlist'%}" class="wishlist-link">
-                            <i class="icon-heart-o"></i>
-                            {% if  wishlist_item_count > 0 %}
-                            <span class="cart-count" style="font-size:14px; color:white; background:#c96; padding:4px; border-radius:50%;">{{ wishlist_item_count}}</span>
-                            {% endif %}
-                        </a> 
-                        {% else %}
-                        <a href="{% url 'log_in'%}" class="wishlist-link">
-                            <i class="icon-user"></i>
-                        </a>
-                        <a href="{% url 'log_in'%}" class="wishlist-link">
-                            <i class="icon-heart-o"></i>
-                            
-                        </a> 
-                        {% endif %}
-                        
-
-                        <div class="dropdown cart-dropdown">
-                            <a href="{% url 'view_cart' %}" class="dropdown-toggle" role="button">
-                                <i class="icon-shopping-cart"></i>
-                                {% if cart_item_count > 0 %}
-                                    <span class="cart-count">{{ cart_item_count }}</span>
-                                {% endif %}
-                                 <!-- <span class="cart-count">{{ cart_item_count }}</span>  -->
+                            <a href="{% url 'account_details'%}" class="wishlist-link">
+                                <i class="icon-user"></i>
                             </a>
-                        </div><!-- End .cart-dropdown -->
+                               
+                            <a href="{% url 'view_wishlist'%}" class="wishlist-link">
+                                <i class="icon-heart-o"></i>
+                                {% if wishlist_item_count > 0 %}
+                                    <span id="wishlist-count"
+                                        class="cart-count"
+                                        style="font-size:14px; color:#c96; background:white; font-weight: bold; padding:4px; border-radius:50%;">
+                                        {{ wishlist_item_count }}
+                                    </span>
+                                {% else %}
+                                    <span id="wishlist-count"
+                                        class="cart-count"
+                                        style="font-size:14px; color:#c96; font-weight: bold;  padding:4px; border-radius:50%;">
+                                    </span>
+                                {% endif %}
+                            </a> <!-- wishlist-->
+
+                            <a href="{% url 'view_cart' %}" class="wishlist-link">
+                                <i class="icon-shopping-cart"></i>
+                                 {% if cart_item_count > 0 %}
+                                    <span 
+                                        id="cart-items-count"
+                                        class="cart-count"
+                                        style="font-size:14px; color:#c96; background:white; font-weight: bold; padding:4px; border-radius:50%;">
+                                        {{ cart_item_count }}
+                                    </span>
+                                 {% else %}
+                                    <span 
+                                        id="cart-items-count"
+                                        class="cart-count"
+                                        style="font-size:14px; background:white; color:#c96; font-weight: bold;  padding:4px; border-radius:50%;">
+                                    </span>
+                                {% endif %}
+                            </a> 
+
+                        {% else %}
+                            <a href="{% url 'log_in'%}" class="wishlist-link">
+                                <i class="icon-user"></i>
+                            </a>
+                            <a href="{% url 'log_in'%}" class="wishlist-link">
+                                <i class="icon-heart-o"></i>
+                            </a> 
+                            <a href="{% url 'log_in'%}" class="wishlist-link">
+                                <i class="icon-shopping-cart"></i>
+                            </a> 
+                        {% endif %}
+
+
                     </div><!-- End .header-right -->
                 </div><!-- End .container -->
             </div><!-- End .header-middle -->
@@ -168,8 +190,6 @@
 	            				<h4 class="widget-title">Useful Links</h4><!-- End .widget-title -->
 
 	            				<ul class="widget-list">
-	            					<li><a href="#">About Molla</a></li>
-	            					<li><a href="#">How to shop on Molla</a></li>
 	            					<li><a href="#">FAQ</a></li>
 	            					<li><a href="#">Contact us</a></li>
 	            					<li><a href="#">Log in</a></li>
@@ -209,14 +229,14 @@
 	            </div><!-- End .container -->
 	        </div><!-- End .footer-middle -->
 
-	        <div class="footer-bottom">
+	        {% comment %} <div class="footer-bottom">
 	        	<div class="container">
 	        		<p class="footer-copyright">Copyright © 2019 Molla Store. All Rights Reserved.</p><!-- End .footer-copyright -->
 	        		<figure class="footer-payments">
 	        			<img src="{% static 'assets/images/payments.png' %}" alt="Payment methods" width="272" height="20">
 	        		</figure><!-- End .footer-payments -->
 	        	</div><!-- End .container -->
-	        </div><!-- End .footer-bottom -->
+	        </div><!-- End .footer-bottom --> {% endcomment %}
         </footer><!-- End .footer -->
     </div><!-- End .page-wrapper -->
     <button id="scroll-top" title="Back to Top"><i class="icon-arrow-up"></i></button>

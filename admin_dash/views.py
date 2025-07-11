@@ -482,6 +482,32 @@ def add_size_and_quantity(request, product_id) :
     return render(request, 'admin_dash/add_size_quantity.html')
 
 
+@login_required(login_url='admin_log_in')
+def update_size_of_quantity(request, variant_id):
+    variant = get_object_or_404(Variants, id=variant_id)
+    if request.method == 'POST':
+        size_quantity = request.POST.get('quantity')
+        if size_quantity and size_quantity.isdigit():
+            new_qty = int(size_quantity)
+            if new_qty <= 0:
+                messages.error(request, "Please enter a valid quantity greater than 0.")
+            elif new_qty > 500:
+                messages.error(request, "You can only add up to 500 quantity.")
+            else:
+                variant.quantity = new_qty
+                variant.save()
+                messages.success(request, 'Quantity updated successfully.')
+                return redirect('show_variants', product_id=variant.product.id)
+        else:
+            messages.error(request, "Please enter a valid number.")
+            
+    context = {
+        'variant': variant,
+    }
+    return render(request, 'admin_dash/edit_size_quantity.html', context)
+
+
+
 
 @login_required(login_url='admin_log_in')
 def delete_product_size(request, variant_id) :
@@ -589,10 +615,10 @@ def add_coupon(request) :
         if code.isdigit() :
             messages.error(request, 'Coupon code can not only contain numbers')
             return redirect('add_coupon')
-        if not min_amount.isdigit() or int(min_amount) < 0  :
+        if not min_amount.isdigit() or int(min_amount) <= 0  :
             messages.error(request, 'Ente a valid Minimum Amount')
             return redirect('add_coupon')
-        if not dis_amount.isdigit() or int(dis_amount)<0  :
+        if not dis_amount.isdigit() or int(dis_amount)<= 0  :
             messages.error(request, 'Ente a valid Discount Amount')
             return redirect('add_coupon')
         if int(dis_amount) > int(min_amount) :

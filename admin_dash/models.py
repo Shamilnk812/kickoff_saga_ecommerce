@@ -31,7 +31,6 @@ class Offer(models.Model) :
 class Category(models.Model) :
     name = models.CharField(max_length=150)
     description = models.TextField(max_length=250,default='Product description')
-    # image = models.ImageField(upload_to='category',default='/path/to/default/image.jpg')
     offer = models.ForeignKey(Offer, on_delete=models.SET_NULL, blank=True, null=True)
     is_available = models.BooleanField(default=True)
 
@@ -48,33 +47,16 @@ class Brand(models.Model) :
         return self.name
 
 
-# class Filter_price(models.Model) :
-#     FILTER_PRICE = (
-#         ('500 TO 1000','500 TO 1000'),
-#         ('1000 TO 1500','1000 TO 1500'),
-#         ('1500 TO 2000','1500 TO 2000'),
-#         ('2000 TO 2500','2000 TO 2500'),
-#     )      
-#     price = models.CharField(choices=FILTER_PRICE, max_length=50)
-#     def __str__(self) -> str:
-#         return self.price
 
 
-class Product(models.Model) :
-    STOCK = ('IN STOCK','IN STOCK'),('OUT OF STOCK','OUT OF STOCK')
-    STATUS = ('Publish','Publish'),('Draft','Draft')
-    
+class Product(models.Model) : 
     name = models.CharField( max_length=200, unique=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(null=True, blank=True)
-    stock = models.CharField(choices=STOCK,max_length=50)
-    status = models.CharField(choices=STATUS,max_length=50)
     created_date = models.DateTimeField( default=timezone.now)
     categories = models.ForeignKey(Category,on_delete=models.CASCADE)
     is_available = models.BooleanField(default=True)
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE)
-    # color = models.ForeignKey(Color, on_delete=models.CASCADE)
-    # filter_price = models.ForeignKey(Filter_price, on_delete=models.CASCADE)
     offer = models.ForeignKey(Offer, on_delete=models.SET_NULL, blank=True, null=True)
 
     def discounted_price(self):

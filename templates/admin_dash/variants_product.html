@@ -60,6 +60,7 @@
                       <th>Id</th>
                       <th>Size</th>
                       <th>Quantity</th>
+                      <th>Edit</th>
                       <th>Delete</th> 
                     </tr>
                   </thead>
@@ -69,6 +70,7 @@
                       <td>{{forloop.counter}}</td>
                       <td>{{variant.size}}</td>
                       <td>{{variant.quantity}} </td>
+                      <td><label class="badge badge-warning"><a style="color : white;" href="{% url 'update_size_quantity' variant.id %}"> Edit </a></label></td>
                       <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'delete_product_size' variant.id %}"> Delete </a></label></td>
                  </tr>
                     {% endfor %}

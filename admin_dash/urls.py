@@ -39,6 +39,7 @@ urlpatterns = [
     path('add_image_product/<int:product_id>/', views.add_image_product, name='add_image_product'),
     path('delete_product_image/<int:img_id>/', views.delete_product_image, name='delete_product_image'),
     path('add_size_and_quantity/<int:product_id>/', views.add_size_and_quantity, name='add_size_and_quantity'),
+    path('update_size_quantity/<int:variant_id>/', views.update_size_of_quantity, name='update_size_quantity'),
     path('delete_product_size/<int:variant_id>/', views.delete_product_size, name='delete_product_size'),
 
     path('all_orders', views.all_orders, name='all_orders'),

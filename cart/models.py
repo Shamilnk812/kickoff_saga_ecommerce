@@ -1,6 +1,6 @@
 
 from django.db import models
-from admin_dash.models import Product
+from admin_dash.models import Product,Variants
 from django.contrib.auth.models import User
 from .models import * 
 # Create your models here.
@@ -32,6 +32,15 @@ class Cart(models.Model) :
     def total_cost(self):
         product_price = self.product.discounted_price() if self.product.offer and self.product.offer.is_valid else self.product.price
         return self.product_qty * product_price
+    
+    @property
+    def is_in_stock(self):
+        try:
+            # Get the variant for this product and size
+            variant = Variants.objects.get(product=self.product, size=self.size)
+            return variant.quantity >= self.product_qty
+        except Variants.DoesNotExist:
+            return False  # If variant doesn't exist, treat it as out of stock
 
     @classmethod
     def total_cost_for_user(cls, user):

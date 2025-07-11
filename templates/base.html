@@ -1054,12 +1054,12 @@
                                             <span class="widget-about-title">Got Question? Call us 24/7</span>
                                             <a href="tel:123456789">+0123 456 789</a>
                                         </div><!-- End .col-sm-6 -->
-                                        <div class="col-sm-6 col-md-8">
+                                        {% comment %} <div class="col-sm-6 col-md-8">
                                             <span class="widget-about-title">Payment Method</span>
                                             <figure class="footer-payments">
                                                 <img src="{% static 'assets/images/payments.png' %}" alt="Payment methods" width="272" height="20">
                                             </figure><!-- End .footer-payments -->
-                                        </div><!-- End .col-sm-6 -->
+                                        </div><!-- End .col-sm-6 --> {% endcomment %}
                                     </div><!-- End .row -->
                                 </div><!-- End .widget-about-info -->
                             </div><!-- End .widget about-widget -->
@@ -1070,8 +1070,6 @@
                                 <h4 class="widget-title">Information</h4><!-- End .widget-title -->
 
                                 <ul class="widget-list">
-                                    <li><a href="#">About Molla</a></li>
-                                    <li><a href="#">How to shop on Molla</a></li>
                                     <li><a href="#">FAQ</a></li>
                                     <li><a href="#">Contact us</a></li>
                                     <li><a href="#">Log in</a></li>
@@ -1111,7 +1109,7 @@
                 </div><!-- End .container -->
             </div><!-- End .footer-middle -->
 
-            <div class="footer-bottom">
+            {% comment %} <div class="footer-bottom">
                 <div class="container">
                     <p class="footer-copyright">Copyright © 2019 Molla Store. All Rights Reserved.</p><!-- End .footer-copyright -->
                     <ul class="footer-menu">
@@ -1128,6 +1126,7 @@
                     </div><!-- End .soial-icons -->
                 </div><!-- End .container -->
             </div><!-- End .footer-bottom -->
+             {% endcomment %}
         </footer><!-- End .footer -->
     </div><!-- End .page-wrapper -->
     <button id="scroll-top" title="Back to Top"><i class="icon-arrow-up"></i></button>

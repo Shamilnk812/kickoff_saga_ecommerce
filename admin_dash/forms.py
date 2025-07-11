@@ -9,16 +9,16 @@ import re
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'description', 'price', 'stock', 'status','categories', 'brand']
+        fields = ['name', 'description', 'price','categories', 'brand']
         widgets = {
         'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Product name'}),
         'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
         'price': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Price'}),
-        'stock': forms.Select(attrs={'class': 'form-control'}),
-        'status': forms.Select(attrs={'class': 'form-control'}),
+        # 'stock': forms.Select(attrs={'class': 'form-control'}),
+        # 'status': forms.Select(attrs={'class': 'form-control'}),
         'brand': forms.Select(attrs={'class': 'form-control'}),
         'categories': forms.Select(attrs={'class': 'form-control'}),
-        # 'filter_price': forms.Select(attrs={'class': 'form-control'}),
+       
     }
     def __init__(self, *args, **kwargs):
         super(ProductForm, self).__init__(*args, **kwargs)

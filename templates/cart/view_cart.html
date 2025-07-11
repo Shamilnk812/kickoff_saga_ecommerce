@@ -33,7 +33,9 @@
                                 <tr>
                                     <th>Product</th>
                                     <th>Price</th>
+                                    <th>Size</th>
                                     <th>Quantity</th>
+                                    <th>Status</th>
                                     <th>Total</th>
                                     <th></th>
                                 </tr>
@@ -57,21 +59,38 @@
                                             </h3><!-- End .product-title -->
                                         </div><!-- End .product -->
                                     </td>
+                                   
                                     <td class="price-col">{% if item.product.offer and item.product.offer.is_valid%}
                                         ${{ item.product.discounted_price|stringformat:'d' }}
                                         {% else %}
                                         ${{ item.product.price | stringformat:'d'}}
                                         {% endif %}
                                     </td>
+                                     <td >
+                                        {{ item.size|floatformat:"-1" }}
+                                    </td>
+
                                     <td class="quantity-col">
                                         <div class="cart-product-quantity">
-                                            <input type="number" name="quantity_{{ item.id }}" class="form-control quantity-input" value="{{ item.product_qty }}" min="1" max="10" step="1" data-decimals="0" required>
-                                           
-                                            {% comment %} <input type="hidden" name="item_id" value="{{ item.id }}"> {% endcomment %}
-
-                                        </div><!-- End .cart-product-quantity -->
+                                            {% if item.is_in_stock %}
+                                                <input type="number" name="quantity_{{ item.id }}" class="form-control quantity-input"
+                                                    value="{{ item.product_qty }}" min="1" max="10" step="1" data-decimals="0" required>
+                                            {% else %}
+                                                <input type="number" class="form-control quantity-input" value="{{ item.product_qty }}" disabled>
+                                                {% comment %} <small class="text-danger">Out of stock</small> {% endcomment %}
+                                            {% endif %}
+                                        </div>
                                     </td>
-                                    <td class="total-col">${{ item.total_cost | stringformat:'d'}}</td>
+
+                                    <td class="stock-col">
+                                        {% if item.is_in_stock %}
+                                        <span class="in-stock">In stock</span>
+                                        {% else %}
+                                            <span class="out-of-stock">Out of stock</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="total-col">${{ item.total_cost|stringformat:'d' }}</td>
                                     <!-- <td class="remove-col"><a href="{% url 'remove_cart_item' item.id %}" ><i class="icon-close"></i></a></td> -->
                                     <td><a href="{% url 'remove_cart_item' item.id %}" class="remove-item"><i class="icon-close"></i></a></td>
 
@@ -222,7 +241,7 @@
     <div class="error-content text-center" style="background-image: url(assets/images/backgrounds/error-bg.jpg)">
         <div class="container">
             <h4 class="error-title">You Cart is empty !</h4><!-- End .error-title -->
-            <p>We are sorry, the page you've requested is not available.</p>
+            <p>Looks like you haven’t added anything to your cart yet. <br/>Start exploring our products and add your favorites to the cart!</p>
             <a href="{% url 'store'%}" class="btn btn-outline-primary-2 btn-minwidth-lg">
                 <span>BACK TO SHOPPING</span>
                 <i class="icon-long-arrow-right"></i>

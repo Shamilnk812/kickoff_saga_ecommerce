@@ -89,9 +89,11 @@ def view_cart(request):
         total_saved_amount = 0  # Initialize the total saved amount
 
         for cart_item in carts:
+           
             if cart_item.product.offer and cart_item.product.offer.is_valid:
                 total_saved_amount += cart_item.product.offer_save_amount() * cart_item.product_qty
-                
+        
+        
         context = {
             'cart': carts,
             'total_amount': total_amount,
@@ -143,7 +145,7 @@ def add_to_cart(request):
                 if variant.quantity >= product_qty:
                    
                     # Check if the product already exists in the user's cart
-                    existing_cart = Cart.objects.filter(user=request.user, product=product,)
+                    existing_cart = Cart.objects.filter(user=request.user, product=product, size=selected_size)
                     if existing_cart.exists():
                         return JsonResponse({'status': 'Product already in cart!'}, status=200)
                     else:
@@ -189,9 +191,22 @@ def update_cart(request):
 
                 try:
                     cart_item = Cart.objects.get(id=item_id)
-                    cart_item.product_qty = new_quantity
-                    cart_item.save()
-                    updated_items += 1
+                    # Check for size-based stock availability
+                    product = cart_item.product
+                    size = cart_item.size
+
+                    try:
+                        variant = Variants.objects.get(product=product, size=size)
+                        if variant.quantity >= new_quantity:
+                            
+                            cart_item.product_qty = new_quantity
+                            cart_item.save()
+                            updated_items += 1
+                        else:
+                            messages.error(request, f'Only {variant.quantity} items available in size {size} for {product.name}.')
+                    except Variants.DoesNotExist:
+                        messages.error(request, f'Variant with size {size} for {product.name} not found.')
+
                 except Cart.DoesNotExist:
                     messages.error(request, f'Cart item with ID {item_id} does not exist.')
 
@@ -202,9 +217,9 @@ def update_cart(request):
 
 
 
-#----------------------- Wishlist management ----------------\
+#----------------------- Wishlist management ----------------
 
-@login_required(login_url='log_in')
+
 def add_to_wishlist(request):
     if request.method == 'POST':
         if request.user.is_authenticated :
@@ -216,7 +231,7 @@ def add_to_wishlist(request):
                 Wishlist.objects.create(user=request.user,product=product)
             return JsonResponse({'message': 'Product added to wishlist successfully'})
         else :
-            return JsonResponse({'error': 'Please login , add to wishlist'})
+            return JsonResponse({'error': 'Please login to add to wishlist'})
 
     else:
         return JsonResponse({'error': 'Invalid request method'})
@@ -240,6 +255,13 @@ def check_out(request):
     cart_items = Cart.objects.filter(user=request.user)
     if not cart_items.exists():
         return redirect(reverse('home'))
+    
+    # Check if any item is out of stock
+    out_of_stock_items = [item for item in cart_items if not item.is_in_stock]
+    if out_of_stock_items:
+        messages.error(request, "Some item in your cart are out of stock. Please update your cart before proceeding to checkout.")
+        return redirect(reverse('view_cart'))  
+    
     total_price = sum(item.total_cost for item in cart_items)
 
 

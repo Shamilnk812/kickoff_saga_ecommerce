@@ -93,22 +93,22 @@ WSGI_APPLICATION = 'kick_off.wsgi.application'
 
 
 # Database Config
-# DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': config('DB_NAME'),
-#        'USER': config('DB_USER'),
-#        'PASSWORD': config('DB_PASSWORD'),
-#        'HOST': config('DB_HOST'),
-#        'PORT': config('DB_PORT'),
-#    }
-# }
-
-
-
 DATABASES = {
-    'default': dj_database_url.parse(config('DATABASE_URL'))
+   'default': {
+       'ENGINE': 'django.db.backends.postgresql',
+       'NAME': config('DB_NAME'),
+       'USER': config('DB_USER'),
+       'PASSWORD': config('DB_PASSWORD'),
+       'HOST': config('DB_HOST'),
+       'PORT': config('DB_PORT'),
+   }
 }
+
+
+
+# DATABASES = {
+#     'default': dj_database_url.parse(config('DATABASE_URL'))
+# }
 
 
 # Email Config

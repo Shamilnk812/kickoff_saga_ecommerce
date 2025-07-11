@@ -6,13 +6,13 @@
         <div class="col-md-12">
             <div class="card shadow">
                 <div class="card-header">
-                    <h3 class="p-3 text-center">Order View</h3>
+                    <h4 class="p-3 text-center">Order View</h4>
                     <a href="{% url 'user_orders'%}" class="btn btn-warning float-end ">&#8592;&nbsp;Back</a>
                 </div>
 
                 <div class="card-body">
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-5">
                             <h5 class="text-center">Shipping Details</h5>
                             <hr>
                             <label for="" style="color: black; font-weight: 500;">First Name</label>
@@ -32,15 +32,16 @@
                             <label for=""  style="color: black; font-weight: 500;">Pincode / Zipcode</label>
                             <div class="border p-2">{{order.pincode}}</div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-7">
                             <h5 class="text-center">Order Details</h5>
                             <hr>
                             <table class="table table-bordered col-md-12">
                                 <thead class="text-center">
                                   <tr>
                                     <th scope="col">Name</th>
-                                    <th scope="col">Quantity</th>
+                                    <th scope="col">Qty</th>
                                     <th scope="col">Price</th>
+                                    <th scope="col">size</th>
                                     <th scope="col">Image</th>
                                   
                                   </tr>
@@ -51,6 +52,7 @@
                                     <td class="pl-3">{{item.product.name}}</td>
                                     <td class="pl-3">{{item.quantity}}</td>
                                     <td class="pl-3">{{item.price}}</td>
+                                    <td class="pl-3">{{item.size}}</td>
                                     {% comment %} <td class="pl-3">{{item.product.images_set.first.image.url}}</td>  {% endcomment %}
                                     <td class="pl-3"><img src="{{ item.product.images_set.first.image.url }}" alt="{{ item.product.name }}"  width="75" height="75" /></td>
                                    
