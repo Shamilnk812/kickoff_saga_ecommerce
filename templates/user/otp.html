@@ -40,7 +40,7 @@
                 <!-- Resend OTP button -->
             <button type="submit" id="resendButton" style="display: none;"><a href="{% url 'resend_otp' %} " style="text-decoration: none; color: white;">Resend OTP</a> </button>
             {% for message in messages %}
-            <p style="color: rgb(212, 4, 4);">{{message}}</p>
+            <p>{{message}}</p>
             {% endfor %}
     </form>
  

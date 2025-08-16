@@ -17,11 +17,8 @@
             </ol>
         </div><!-- End .container -->
     </nav><!-- End .breadcrumb-nav -->
-    {% comment %} {% for message in messages %}
-    <p>{{message}}</p>
-    {% endfor %} {% endcomment %}
-     {% comment %} {% include "alert.html" %} {% endcomment %}
-       {% if cart %}
+    
+    {% if cart %}
     
     <div class="page-content">
         <div class="cart">
@@ -45,7 +42,7 @@
                              <form id="update-cart-form" method="post" action="{% url 'update_cart' %}">
                                 {% csrf_token %}
                                 {% for item in cart%}
-                                <tr class="cart-item" data-item-id="{{ item.id }}">
+                                <tr class="cart-item" data-item-id="{{ item.id }}"   style="{% if not item.is_valid_cart_item %}opacity: 0.5; {% endif %}">
                                     <td class="product-col">
                                         <div class="product">
                                             <figure class="product-media">
@@ -61,9 +58,9 @@
                                     </td>
                                    
                                     <td class="price-col">{% if item.product.offer and item.product.offer.is_valid%}
-                                        ${{ item.product.discounted_price|stringformat:'d' }}
+                                        ₹{{ item.product.discounted_price|stringformat:'d' }} <span class="text-muted" style="font-size: 1rem; text-decoration: line-through; margin-left: 5px;">{{item.product.price | stringformat:'d'}}</span>
                                         {% else %}
-                                        ${{ item.product.price | stringformat:'d'}}
+                                        ₹{{ item.product.price | stringformat:'d'}}
                                         {% endif %}
                                     </td>
                                      <td >
@@ -72,26 +69,36 @@
 
                                     <td class="quantity-col">
                                         <div class="cart-product-quantity">
-                                            {% if item.is_in_stock %}
+                                            {% if item.is_in_stock and item.is_valid_cart_item %}
                                                 <input type="number" name="quantity_{{ item.id }}" class="form-control quantity-input"
                                                     value="{{ item.product_qty }}" min="1" max="10" step="1" data-decimals="0" required>
                                             {% else %}
                                                 <input type="number" class="form-control quantity-input" value="{{ item.product_qty }}" disabled>
-                                                {% comment %} <small class="text-danger">Out of stock</small> {% endcomment %}
                                             {% endif %}
                                         </div>
                                     </td>
 
                                     <td class="stock-col">
-                                        {% if item.is_in_stock %}
-                                        <span class="in-stock">In stock</span>
+                                         {% if item.is_valid_cart_item %}
+                                            {% if item.is_in_stock %}
+                                                <span class="in-stock">In stock</span>
+                                            {% else %}
+                                                <span class="out-of-stock">Out of stock</span>
+                                            {% endif %}
                                         {% else %}
-                                            <span class="out-of-stock">Out of stock</span>
+                                            <span class="text-danger">Unavailable</span>
                                         {% endif %}
                                     </td>
+                                   
 
-                                    <td class="total-col">${{ item.total_cost|stringformat:'d' }}</td>
-                                    <!-- <td class="remove-col"><a href="{% url 'remove_cart_item' item.id %}" ><i class="icon-close"></i></a></td> -->
+                                    <td class="total-col">
+                                        {% if item.is_valid_cart_item %}
+                                            ₹{{ item.total_cost|stringformat:'d' }}
+                                        {%else%}
+                                        -
+                                        {%endif%}
+                                    </td>
+                                  
                                     <td><a href="{% url 'remove_cart_item' item.id %}" class="remove-item"><i class="icon-close"></i></a></td>
 
                                 </tr>
@@ -112,30 +119,18 @@
                                 <form  method="POST">
                                     {% csrf_token %}
                                     <div class="input-group">
-                                        <input type="text" name="coupon" class="form-control" required placeholder="coupon code">
+                                        <input type="text" name="coupon" class="form-control" required placeholder="coupon code" {% if applied_coupon %}disabled style="cursor: not-allowed;"{% endif %}>
                                         <div class="input-group-append">
-                                            <button class="btn btn-outline-primary-2" type="submit" ><i class="icon-long-arrow-right"></i></button>
+                                            <button class="btn btn-outline-primary-2" type="submit" {% if applied_coupon %}disabled style="cursor: not-allowed;" {% endif %} ><i class="icon-long-arrow-right"></i></button>
                                         </div><!-- .End .input-group-append -->
                                     </div><!-- End .input-group -->
                                 </form>
                             
-                                     {% comment %} {% if cart.0.coupon %}
-                                            
-                                            <a class="btn btn-success" href="{% url 'remove_coupon' cart.0.id %}">{{ cart.0.coupon.coupon_code }}</a>
-                                    {% endif %} {% endcomment %}
                             
                             </div><!-- End .cart-discount -->
                             
                                 
-                            <!-- <a href="{% url 'update_cart' %}" class="btn btn-outline-dark-2"><span>UPDATE CART</span><i class="icon-refresh"></i></a> -->
-                            <!-- <button type="submit" class="btn btn-outline-dark-2 update-cart" >
-                                <span>UPDATE CART</span>
-                                <i class="icon-refresh"></i>
-                            </button> -->
-                            <!-- <button type="submit" class="btn btn-outline-dark-2 update-cart" id="update-cart-button">
-                                <span>UPDATE CART</span>
-                                <i class="icon-refresh"></i>
-                            </button> -->
+                        
                            
                            
                         </div><!-- End .cart-bottom -->
@@ -148,7 +143,7 @@
                                 <tbody>
                                     <tr class="summary-subtotal">
                                         <td>Subtotal:</td>
-                                        <td class="total-col" id="overall-total">$160.00</td>
+                                        <td class="total-col" id="overall-total">₹{{sub_total|stringformat:'d'}}</td>
                                     </tr><!-- End .summary-subtotal -->
                                     <tr class="summary-shipping">
                                         <td>Shipping:</td>
@@ -158,65 +153,52 @@
                                     <tr class="summary-shipping-row">
                                         <td>
                                             <div class="custom-control custom-radio">
-                                                {% comment %} <input type="radio" id="free-shipping" name="shipping" class="custom-control-input"> {% endcomment %}
                                                 <input type="radio" id="free-shipping" name="shipping" class="custom-control-input" checked>
-
-                                                {% comment %} <input type="radio" id="free-shipping" name="shipping" class="custom-control-input" checked> {% endcomment %}
-                                                {% comment %} <input type="radio" id="free-shipping" name="shipping" class="custom-control-input" value="0" checked> {% endcomment %}
                                                 <label class="custom-control-label" for="free-shipping">Free Shipping</label>
                                             </div><!-- End .custom-control -->
                                         </td>
-                                        <td>$0.00</td>
+                                        <td>₹0.00</td>
                                     </tr><!-- End .summary-shipping-row -->
 
                                     <tr class="summary-shipping-row">
                                         <td>
                                             <div class="custom-control custom-radio">
                                                 <input type="radio" id="standard-shipping" name="shipping" class="custom-control-input">
-
-                                               {% comment %} <input type="radio" id="standard-shipping" name="shipping" class="custom-control-input">  {% endcomment %}
-                                                {% comment %} <input type="radio" id="standart-shipping" name="shipping" class="custom-control-input"> {% endcomment %}
-                                                {% comment %} <input type="radio" id="standard-shipping" name="shipping" class="custom-control-input" value="10"> {% endcomment %}
-
                                                 <label class="custom-control-label" for="standard-shipping">Standart:</label>
                                             </div><!-- End .custom-control -->
                                         </td>
-                                        <td>$10.00</td>
+                                        <td>₹10.00</td>
                                     </tr><!-- End .summary-shipping-row -->
 
                                     <tr class="summary-shipping-row">
                                         <td>
                                             <div class="custom-control custom-radio">
-                                              <input type="radio" id="express-shipping" name="shipping" class="custom-control-input"> 
-                                                {% comment %} <input type="radio" id="express-shipping" name="shipping" class="custom-control-input"> {% endcomment %}
-                                                {% comment %} <input type="radio" id="express-shipping" name="shipping" class="custom-control-input" value="20"> {% endcomment %}
-
-
+                                              <input type="radio" id="express-shipping" name="shipping" class="custom-control-input">
                                                 <label class="custom-control-label" for="express-shipping">Express:</label>
                                             </div><!-- End .custom-control -->
                                         </td>
-                                        <td>$20.00</td>
+                                        <td>₹20.00</td>
                                     </tr><!-- End .summary-shipping-row -->
 
-                                    {% if cart.0.coupon %}
+                                    {% if applied_coupon %}
                                     <tr class="summary-shipping">
                                         <td>Coupon applied :</td>
                                         <td>&nbsp;</td>
                                     </tr>
                                     <tr class="summary-shipping-row">
-                                            <td style="background:violet" class="text-center">{{ cart.0.coupon.coupon_code|upper }}</td>
-                                            <td><a href="{% url 'remove_coupon' cart.0.id %}"><i class="icon-close"></i></a></td>
+                                            <td style="background:violet" class="text-center">{{ applied_coupon|upper }} {{coupon_discount_percentage}}% OFF</td>
+                                            <td><a href="{% url 'remove_coupon' %}"><i class="icon-close"></i></a></td>
                                        </tr>
                                        <tr class="summary-shipping">
                                         <td>Coupon discount :&nbsp;</td>
-                                        <td>${{ cart.0.coupon.discound_amount}} </td>
+                                        <td>₹{{coupon_discount|floatformat:0}} </td>
                                     </tr>
                                     {% endif %}
                                     <br>
                                     {% if total_saved_amount > 0 %}
                                         <tr class="summary-shipping">
                                             <td>Saved Amount (Offers):</td>
-                                            <td>${{ total_saved_amount|stringformat:'d' }}</td>
+                                            <td>₹{{ total_saved_amount|stringformat:'d' }}</td>
                                         </tr><!-- End .summary-shipping -->
                                     {% endif %}
                                     <tr class="summary-total">
@@ -225,8 +207,14 @@
                                     </tr><!-- End .summary-total -->
                                 </tbody>
                             </table><!-- End .table table-summary -->
+                            {% comment %} <form method="post" action="{% url 'checkout' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="shipping_type" id="shipping_type_input">
+                                <input type="hidden" name="shipping_amount" id="shipping_amount_input"> {% endcomment %}
 
-                            <a href="{% url 'checkout'%}" class="btn btn-outline-primary-2 btn-order btn-block">PROCEED TO CHECKOUT</a>
+                                <a href="{% url 'checkout' %}" class="btn btn-outline-primary-2 btn-order btn-block">PROCEED TO CHECKOUT</a>
+                                {% comment %} <button class="btn btn-outline-primary-2 btn-order btn-block">PROCEED TO CHECKOUT</button> {% endcomment %}
+                            {% comment %} </form> {% endcomment %}
                         </div><!-- End .summary -->
 
                         <a href="{% url 'store'%}" class="btn btn-outline-dark-2 btn-block mb-3"><span>CONTINUE SHOPPING</span><i class="icon-refresh"></i></a>
@@ -288,104 +276,49 @@
         }); {% endcomment %}
 
 
-
-
-
-document.addEventListener("DOMContentLoaded", function () {
-    const quantityInputs = document.querySelectorAll(".quantity-input");
-    const priceElements = document.querySelectorAll(".price-col");
-    const totalElements = document.querySelectorAll(".total-col");
-    const overallTotalElement = document.getElementById("overall-total");
-
-    // Calculate the overall total cost
-    function calculateOverallTotal() {
-        let overallTotal = 0;
-
-        for (let i = 0; i < quantityInputs.length; i++) {
-            const quantity = parseInt(quantityInputs[i].value, 10);
-            const productPrice = parseFloat(priceElements[i].textContent.replace("$", "").trim());
-            const newTotal = quantity * productPrice;
-            totalElements[i].textContent = "$" + newTotal.toFixed(2);
-            overallTotal += newTotal;
-        }
-
-        // Convert the overallTotal to a number, and then back to a string to remove trailing zeros
-        overallTotal = Number(overallTotal.toFixed(2));
-        overallTotalElement.textContent = overallTotal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-
-    // Add an event listener to each quantity input to recalculate the total when the quantity changes
-    quantityInputs.forEach(function (input) {
-        input.addEventListener("input", calculateOverallTotal);
-    });
-
-    // Calculate the initial overall total
-    calculateOverallTotal();
-});
-
-
-
-document.addEventListener("DOMContentLoaded", function () {
-    const quantityInputs = document.querySelectorAll(".cart-product-quantity input");
-    const priceElements = document.querySelectorAll(".price-col");
-    const overallTotalElement = document.getElementById("overall-total");
-
-    // Calculate the overall total cost
-    function calculateOverallTotal() {
-        let overallTotal = 0;
-
-        for (let i = 0; i < quantityInputs.length; i++) {
-            const quantity = parseInt(quantityInputs[i].value, 10);
-            const productPrice = parseFloat(priceElements[i].textContent.replace("$", "").trim());
-            overallTotal += quantity * productPrice;
-        }
-
-        overallTotalElement.textContent = "$" + overallTotal.toFixed(2).replace(/\.?0*$/, "");
-
-    }
-
-    // Add an event listener to each quantity input to recalculate the total when the quantity changes
-    quantityInputs.forEach(function (input) {
-        input.addEventListener("input", calculateOverallTotal);
-    });
-
-    // Calculate the initial overall total
-    calculateOverallTotal();
-});
-
-
 document.addEventListener("DOMContentLoaded", function () {
     const shippingRadioButtons = document.querySelectorAll('input[name="shipping"]');
     const overallTotalElement = document.getElementById("grand_total_amount");
 
-    // Define shipping costs
     const shippingCosts = {
         "free-shipping": 0,
         "standard-shipping": 10,
         "express-shipping": 20
     };
 
-    // Update the overall total with shipping cost
     function updateTotalWithShipping() {
-        // Get the selected shipping method
         const selectedShipping = Array.from(shippingRadioButtons).find(radio => radio.checked);
 
-        // Check if the shipping method is selected
         if (selectedShipping) {
-            // Get the shipping cost based on the selected shipping method
             const shippingCost = shippingCosts[selectedShipping.id];
 
-            // Update the overall total element to display the total amount with the shipping cost
-            overallTotalElement.textContent = "$" + (parseFloat('{{total_amount}}') + shippingCost).toFixed(2).replace(/\.?0*$/, "");
+            // Update UI
+            overallTotalElement.textContent = "₹" + 
+                (parseFloat('{{ total_amount }}') + shippingCost).toFixed(2).replace(/\.?0*$/, "");
+
+            // Send to server via AJAX
+            fetch("{% url 'update_shipping' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    shipping_type: selectedShipping.id,
+                    shipping_amount: shippingCost
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error("Failed to update shipping session");
+                }
+            });
         }
     }
 
-    // Add an event listener to each shipping radio button to recalculate the total when the shipping method changes
     shippingRadioButtons.forEach(function (radio) {
         radio.addEventListener("change", updateTotalWithShipping);
     });
 
-    // Calculate the initial overall total
     updateTotalWithShipping();
 });
 

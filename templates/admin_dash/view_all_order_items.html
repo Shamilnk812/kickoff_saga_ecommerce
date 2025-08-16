@@ -1,0 +1,120 @@
+{% extends 'admin_dash/dash.html'%}
+{% load static%}
+{% block content %}
+
+<div class="main-panel">
+    <div class="content-wrapper">
+       {% include "alert.html" %}
+      <div class="page-header">
+      
+        <h4 class="card-title">All Order Items</h4>
+           
+      </div> 
+     
+        <div class="col-lg-12 grid-margin stretch-card">
+          <div class="card">
+            <div class="card-body">
+                <div  class="form-group text-right">
+                    <form method="get" action="{% url 'view_all_order_items' %}">
+            <!-- Time Range Dropdown -->
+            <select name="time_range" id="time_range" class="form-control col-sm-2 d-inline">
+                <option value="all" {% if selected_time_range == 'all' %}selected{% endif %}>All</option>
+                <option value="day" {% if selected_time_range == 'day' %}selected{% endif %}>Day</option>
+                <option value="week" {% if selected_time_range == 'week' %}selected{% endif %}>Week</option>
+                <option value="month" {% if selected_time_range == 'month' %}selected{% endif %}>Month</option>
+                <option value="year" {% if selected_time_range == 'year' %}selected{% endif %}>Year</option>
+            </select>
+
+            <!-- Status Dropdown -->
+            <select name="status" id="status" class="form-control col-sm-2 d-inline">
+                <option value="">-- All Status --</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+
+    <button class="btn btn-primary" type="submit">Apply Filter</button>
+</form>
+
+                  
+                </div>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Tracking ID</th>
+                      <th>User</th>
+                      <th>Date</th>
+                      <th>Photo</th>
+                      <th>Product</th>
+                      <th>Size</th>
+                      <th>Qty</th>
+                      <th>Price</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>View Details</th>
+                    
+                    </tr>
+                  </thead>
+                  <tbody>
+                {% if all_order_items %}
+                  {% for item in all_order_items %}
+                    <tr>
+                      <td class="text-secondary ">{{item.order.tracking_no}}</td>
+                      <td>{{item.order.fname}} {{item.order.lname}}</td>
+                      <td>{{item.created_at}}</td>
+                      <td><img src="{{ item.product.images_set.first.image.url }}" alt="{{ item.product.name }}" width="75" height="75"></td>
+                      <td>{{item.product.name}}</td>
+                      <td>{{item.size}}</td>
+                      <td>{{item.quantity}}</td>
+                      <td>₹{{item.price | stringformat:'d'}}</td>
+                      <td>₹{{item.total_price | stringformat:'d'}}</td>
+                      <td>
+                         {% if item.status == 'Delivered' %}
+                          <span class="text-success ">Delivered</span>
+                        {% elif item.status == 'Cancelled' %}
+                          <span class="text-danger">Cancelled</span>
+                        {% elif item.status == 'Return Requested' or item.status == 'Returned' %}
+                          <span class="text-warning">{{ item.status }}</span>
+                        {% elif item.status == 'Return Rejected' %}
+                           <span style="color: #ab4c41ff;">Return Rejected</span>
+                        {% else %}
+                          <span class="text-primary">{{ item.status }}</span>
+                        {% endif %}
+                      </td>
+                      <td >
+                         <a href="{% url 'view_single_order' item.order.id %}" class="btn bg-primary text-white">View</a>
+                      </td>
+                   </tr>
+                    {%endfor%}   
+                    {%else%} 
+                     <tr>
+                        <td colspan="10" class="text-center text-muted" style="padding: 80px 0;">
+                        <h5>No orders found.</h5>
+                        <p>There are currently no orders to display.</p>
+                        </td>
+                  </tr>
+                    {%endif%}                  
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+          {% include 'pagination.html' with page_obj=all_order_items%}
+      </div>
+     </div>
+
+  </div>
+  </div>
+  
+
+
+
+
+
+
+
+
+  
+{% endblock content %}

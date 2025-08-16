@@ -8,14 +8,11 @@
               <h3 class="page-title"> User Management</h3>
               <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
-                  {% comment %} <li class="breadcrumb-item"><a href="#">Tables</a></li> {% endcomment %}
-                  {% comment %} <li class="breadcrumb-item active" aria-current="page">Basic tables</li> {% endcomment %}
+                 
                   <li class="nav-item w-100">
-                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'search_user' %}" method="get">
-                      <input type="text" class="form-control" placeholder="Search products" name='query' id='query'>
-                      <button class="btn btn-primary" type="submit"> click </button>
-                       
-                     
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'user_management' %}" method="get" >
+                      <input type="text" class="form-control" placeholder="Search users" name="query" id="query" value="{{ query|default_if_none:'' }}">
+                      <button class="btn btn-primary" type="submit">Search</button>
                     </form>
                   </li>
                 </ol>
@@ -27,9 +24,7 @@
                 <div class="card">
                   {% include "alert.html" %}
                   <div class="card-body">
-                    {% comment %} <h4 class="card-title">Basic Table</h4>
-                    <p class="card-description"> Add class <code>.table</code>
-                    </p> {% endcomment %}
+                  
                     <div class="table-responsive">
                       <table class="table">
                         <thead>
@@ -42,25 +37,46 @@
                           </tr>
                         </thead>
                         <tbody>
-                          {% for user in all_users%}
-                          <tr>
-                            <td>{{forloop.counter}}</td>
-                            <td>{{user.username}}</td>
-                            <td>{{user.email}}</td>
-                            {% if user.is_active%}
-                            <td class="text-success"> Active</td>
-                            {% else%}
-                            <td class="text-danger"> Deactive</td>
-                            {%endif%}
-                            
-                            <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'block_unblock_user' user.id %}">
-                              {{ user.is_active|yesno:"Block,Unblock" }}
-                          </a></label></td>
-                            
-                          </tr>
-                          {%endfor%}
-                         
-                         
+                           {% if all_users %}
+                            {% for user in all_users %}
+                            <tr>
+                              <td>{{ forloop.counter }}</td>
+                              <td>{{ user.username }}</td>
+                              <td>{{ user.email }}</td>
+                              {% if user.is_active %}
+                              <td class="text-success">Active</td>
+                              {% else %}
+                              <td class="text-danger">Deactive</td>
+                              {% endif %}
+                              
+                              <td>
+                                {% comment %} <label class="badge badge-danger">
+                                  <a style="color: white;" href="{% url 'block_unblock_user' user.id %}">
+                                    {{ user.is_active|yesno:"Block,Unblock" }}
+                                  </a>
+                                </label> {% endcomment %}
+
+                                 {% if user.is_active %}
+                                    <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#blockReasonModal" data-user-id="{{ user.id }}"  data-username="{{ user.username }}">
+                                      Block
+                                    </button>
+                                  {% else %}
+                                    <form method="POST" action="{% url 'unblock_user' user.id %}" class="d-inline unblock-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-success unblock-btn">
+                                          <span class="btn-text">Unblock</span>
+                                          <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                        </button>
+                                      </form>
+                                  {% endif %}
+                              </td>
+                            </tr>
+                            {% endfor %}
+                          {% else %}
+                            <tr>
+                              <td colspan="5" class="text-center">No users found.</td>
+                            </tr>
+                          {% endif %}
                           
                         </tbody>
                       </table>
@@ -68,12 +84,99 @@
                   </div>
                 </div>
               </div>
+
+              {% include 'pagination.html' with page_obj=all_users %}
             </div>
            </div>
 
         </div>
+
+
+ <!-- Block Reason Modal -->
+
+<div class="modal fade" id="blockReasonModal" tabindex="-1" aria-labelledby="blockReasonModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="post" action="{% url 'block_user' user_id=0 %}" id="blockForm">
+      {% csrf_token %}
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="blockReasonModalLabel">Block User: </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">X</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="user_id" id="blockUserId">
+          <div class="mb-3">
+            <label for="blocking_reason" class="form-label">Reason for blocking</label>
+            <textarea class="form-control" name="blocking_reason" id="blocking_reason" rows="3" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger" id="blockSubmitBtn">
+            <span id="btnText">Block User</span>
+            <span id="btnLoader" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+
         <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+        <script>
+         const blockModal = document.getElementById('blockReasonModal');
+            
+            // Handle modal show
+            blockModal.addEventListener('show.bs.modal', function (event) {
+              const button = event.relatedTarget;
+              const userId = button.getAttribute('data-user-id');
+              const username = button.getAttribute('data-username');
+              const inputUserId = blockModal.querySelector('#blockUserId');
+              inputUserId.value = userId;
+              const modalTitle = blockModal.querySelector('#blockReasonModalLabel');
+              modalTitle.textContent = `Block User: ${username}`;
+              const form = document.getElementById('blockForm');
+              form.action = `/admin_dash/block_user/${userId}/`;
+            });
+
+            // Handle form submit with loader
+            document.getElementById('blockForm').addEventListener('submit', function (e) {
+              const submitBtn = document.getElementById('blockSubmitBtn');
+              const btnText = document.getElementById('btnText');
+              const btnLoader = document.getElementById('btnLoader');
+
+              // Disable button and show spinner
+              submitBtn.disabled = true;
+              btnText.classList.add('d-none');
+              btnLoader.classList.remove('d-none');
+            });
+        </script> 
+
+        <script>
+          document.addEventListener('DOMContentLoaded', function () {
+            const unblockForms = document.querySelectorAll('.unblock-form');
+
+            unblockForms.forEach(form => {
+              form.addEventListener('submit', function (e) {
+                const button = form.querySelector('.unblock-btn');
+                const spinner = button.querySelector('.spinner-border');
+                const btnText = button.querySelector('.btn-text');
+
+                // Disable button and show spinner
+                button.disabled = true;
+                spinner.classList.remove('d-none');
+                btnText.textContent = 'Unblocking...';
+              });
+            });
+          });
+        </script>
 
    {% endblock %}
 
-{% comment %} ----------------------------------------------------------------- {% endcomment %}
+
+
+
+

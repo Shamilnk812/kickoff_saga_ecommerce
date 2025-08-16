@@ -5,20 +5,24 @@
 <div class="main-panel">
     <div class="content-wrapper">
       <div class="page-header">
-        {% comment %} <h3 class="page-title"> Basic Tables </h3> {% endcomment %}
         <h4 class="card-title">Coupon Management</h4>
-      
-       
+         <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                  <li class="nav-item w-100">
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'view_coupons' %}" method="get" >
+                      <input type="text" class="form-control" placeholder="Search coupon.." name="query" id="query" value="{{ query|default_if_none:'' }}">
+                      <button class="btn btn-primary" type="submit">Search</button>
+                    </form>
+                  </li>
+                </ol>
+              </nav>       
       </div>
       {% comment %} <div class="row"> {% endcomment %}
         <div class="col-lg-12 grid-margin stretch-card">
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_coupon' %}">Add New Coupon</a></label>
-
-              {% comment %} <p class="card-description"> Add class <code>.table</code>
-              </p> {% endcomment %}
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_coupon' %}">Add New Coupon</a>
               <div class="table-responsive">
                 <table class="table">
                   <thead>
@@ -32,32 +36,35 @@
                     </tr>
                   </thead>
                   <tbody>
-                  {% for coupon in all_coupons%}
-                    <tr>
-                      <td>{{forloop.counter}}</td>
-                      <td>{{coupon.coupon_code}}</td>
-                      <td>{{coupon.minimum_amount}}</td>
-                      <td>{{coupon.discound_amount}}</td>
-                      {% if coupon.is_expired%}
-                      <td class="text-danger"> Deactive</td>
-                      <td><label class="badge badge-success"><a class="unblock-coupon" data-url="{% url 'delete_coupon' coupon.id %}" style="color: white;"> Unblock</a></label></td>
-                      {% comment %} <td><label class="badge badge-danger"><a class="unblock-coupon" data-url="{% url 'delete_coupon' coupon.id %}" data-blocked="{{ coupon.is_blocked }}" style="color: white;"> Unblock</a></label></td> {% endcomment %}
+                    {% if all_coupons%}
+                      {% for coupon in all_coupons%}
+                        <tr>
+                          <td>{{forloop.counter}}</td>
+                          <td>{{coupon.coupon_code}}</td>
+                          <td>{{coupon.minimum_amount}}</td>
+                          <td>{{coupon.discount_percentage}}%</td>
+                          {% if not coupon.is_active%}
+                            <td class="text-danger"> Inactive</td>
+                            <td><a class="unblock-coupon btn btn-sm btn-success" data-url="{% url 'delete_coupon' coupon.id %}" style="color: white;"> Unblock</a></td>
+                          {% else %}
+                            <td class="text-success"> Active</td>
+                            <td><a class="delete-coupon btn btn-sm btn-danger" data-url="{% url 'delete_coupon' coupon.id %}" style="color: white;"> Block</a></td>
+                          {% endif %}
 
-
-                      {% else %}
-                      <td class="text-success"> Active</td>
-                      <td><label class="badge badge-danger"><a class="delete-coupon" data-url="{% url 'delete_coupon' coupon.id %}" style="color: white;"> Block</a></label></td>
-
-                      {% endif %}
-
-                  </tr>
-                    {%endfor%}  
+                      </tr>
+                        {%endfor%}  
+                      {%else%}
+                        <tr>
+                        <td colspan="6" class="text-center p-5">No coupons found.</td>
+                      </tr>
+                      {%endif%}
                    </tbody>
                 </table>
               </div>
             </div>
           </div>
         </div>
+           {% include 'pagination.html' with page_obj=all_coupons%}
       </div>
      </div>
 

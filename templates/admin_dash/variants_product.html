@@ -8,7 +8,7 @@
 <div class="main-panel">
     <div class="content-wrapper">
       <div class="page-header">
-     <h3 class="page-title "> PRODUCT&nbsp VARIANTS </h3> 
+     <h3 class="page-title ">{{product.name|capfirst}} product variants </h3> 
     </div>
          {% include "alert.html" %}
       <div class="row">
@@ -16,8 +16,8 @@
           <div class="card">
             <div class="card-body">
               <h4 class="card-title text-center">Images</h4>
-              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_image_product' product_id%}">+ Add Image
-              </a></label>
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_image_product' product.id%}">+ Add Image
+              </a>
               <div class="table-responsive">
                 <table class="table">
                   <thead>
@@ -28,13 +28,19 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {% for img in image%} 
-                    <tr>
-                      <td>{{forloop.counter}}</td>
-                      <td><img src="{{img.image.url}}" alt="Product Image">  </td>
-                      <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'delete_product_image' img.id %}"> Delete </a></label></td>
-                  </tr>
-                    {% endfor %}
+                    {%if image%}
+                      {% for img in image%} 
+                      <tr>
+                        <td>{{forloop.counter}}</td>
+                        <td><img src="{{img.image.url}}" alt="Product Image">  </td>
+                        <td><a class="delete-image btn btn-sm btn-danger" style="color : white;" data-url="{% url 'delete_product_image' img.id product.id %}"> Delete </a></td>
+                    </tr>
+                      {% endfor %}
+                    {%else%}
+                     <tr>
+                        <td colspan="3" class="text-center p-5">No images have been added yet.</td>
+                      </tr>
+                    {%endif%}
                     
                    
                     
@@ -44,15 +50,15 @@
             </div>
           </div>
         </div>
-        {% comment %} =================|SHOW SIZE AND QUANTITY ==================== {% endcomment %}
+       
 
 
         <div class="col-lg-6 grid-margin stretch-card">
           <div class="card">
             <div class="card-body">
               <h4 class="card-title text-center">Size and Quantity</h4>
-              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_size_and_quantity' product_id%}">+ Add Size 
-              </a></label>
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_size_and_quantity' product.id%}">+ Add Size 
+              </a>
               <div class="table-responsive">
                 <table class="table">
                   <thead>
@@ -65,15 +71,29 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {% for variant in variants%} 
-                    <tr>
-                      <td>{{forloop.counter}}</td>
-                      <td>{{variant.size}}</td>
-                      <td>{{variant.quantity}} </td>
-                      <td><label class="badge badge-warning"><a style="color : white;" href="{% url 'update_size_quantity' variant.id %}"> Edit </a></label></td>
-                      <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'delete_product_size' variant.id %}"> Delete </a></label></td>
-                 </tr>
-                    {% endfor %}
+                    {%if variants%}
+                      {% for variant in variants%} 
+                      <tr>
+                        <td>{{forloop.counter}}</td>
+                        <td>{{variant.size}}</td>
+                        <td>{{variant.quantity}} </td>
+                        <td><a class="btn btn-sm btn-warning" style="color : white;" href="{% url 'update_size_quantity' variant.id %}"> Edit </a></td>
+
+                        <td>
+                          {% if variant.is_available%}
+                            <a  class="delete-variant btn btn-sm btn-danger"  style="color : white;" data-url="{% url 'delete_product_size' variant.id product.id %}"> Block </a>
+                          {%else%}
+                            <a  class="btn btn-sm btn-success"  style="color : white;" href="{% url 'delete_product_size' variant.id product.id %}"> Unblock </a>
+                          {%endif%}
+
+                        </td>
+                      </tr>
+                          {% endfor %}
+                    {%else%}
+                      <tr>
+                        <td colspan="5" class="text-center p-5">No sizes or quantities have been added yet.</td>
+                      </tr>
+                    {%endif%}
                     
                    
                     
@@ -88,6 +108,38 @@
 
   </div>
   </div>
+
+
+  <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function handleDeleteClick(selector, titleText, confirmText) {
+        document.querySelectorAll(selector).forEach(function (link) {
+            link.addEventListener("click", function (event) {
+                event.preventDefault();
+
+                const deleteUrl = link.getAttribute("data-url");
+
+                swal({
+                    title: "Are you sure?",
+                    text: titleText,
+                    icon: "warning",
+                    buttons: ["Cancel", confirmText],
+                    dangerMode: true,
+                }).then((confirmed) => {
+                    if (confirmed) {
+                        window.location.href = deleteUrl;
+                    }
+                });
+            });
+        });
+    }
+
+    handleDeleteClick(".delete-image", "Once deleted, this product image will be permanently removed.", "Yes, delete it");
+    handleDeleteClick(".delete-variant", "Once blocked, this size and quantity will no longer be available for purchase.", "Yes, block it");
+});
+</script>
 
   
 {% endblock content %}

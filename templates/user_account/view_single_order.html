@@ -6,76 +6,241 @@
         <div class="col-md-12">
             <div class="card shadow">
                 <div class="card-header">
-                    <h4 class="p-3 text-center">Order View</h4>
-                    <a href="{% url 'user_orders'%}" class="btn btn-warning float-end ">&#8592;&nbsp;Back</a>
+                    <h4 class="text-center p-3">Order View</h4>
+                    <a href="{% url 'user_orders' %}" class="btn btn-warning float-end">&#8592;&nbsp;Back</a>
                 </div>
 
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-5">
-                            <h5 class="text-center">Shipping Details</h5>
-                            <hr>
-                            <label for="" style="color: black; font-weight: 500;">First Name</label>
-                            <div class="border p-2">{{order.fname}}</div>
-                            <label for=""  style="color: black; font-weight: 500;">Last Name</label>
-                            <div class="border p-2">{{order.lname}}</div>
-                            <label for=""  style="color: black; font-weight: 500;">Phone Number</label>
-                            <div class="border p-2">{{order.phone}}</div>
-                            <label for=""  style="color: black; font-weight: 500;">Address</label>
-                            <div class="border p-2">{{order.address}},
-                                {{order.city}},
-                                {{order.state}},
-                                {{order.country}}
-                            </div>
-                            <label for=""  style="color: black; font-weight: 500;">Email</label>
-                            <div class="border p-2">{{order.email}}</div>
-                            <label for=""  style="color: black; font-weight: 500;">Pincode / Zipcode</label>
-                            <div class="border p-2">{{order.pincode}}</div>
+                   <div class="position-relative">
+                        <h5 class="text-center">Order Items</h5>
+                        {% if can_cancel_all%}
+                        <a href="#" class="btn btn-danger btn-sm position-absolute  text-white" style="top: 0; right: 0;"  data-toggle="modal" data-target="#cancelAllModal" >Cancel All</a>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+                    <table class="table table-bordered w-100">
+                        <thead class="text-center">
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Size</th>
+                                <th>Qty</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th>Offer</th>
+                                <th>Status</th>
+                                <th>invoice</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in orderitems %}
+                            <tr class="align-middle text-center">
+                                <td><img src="{{ item.product.images_set.first.image.url }}" alt="{{ item.product.name }}" width="50" height="50"></td>
+                                <td>{{ item.product.name }}</td>
+                                <td>{{ item.size }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>₹{{ item.price|floatformat:0}}</td>
+                                <td>₹{{ item.total_price|floatformat:0 }}</td>
+                                <td>
+                                  {% if item.offer_saved_amount%}
+                                    <span>₹{{item.offer_saved_amount|floatformat:0}}</span>
+                                  {%else%}
+                                      <span>No offer</span>
+                                  {%endif%}
+                                </td>
+                                
+                                <td>
+                                  {% if item.status == 'Delivered' %}
+                                    <span class="text-success font-weight-bold">{{ item.status }}</span>
+                                  {% elif item.status == 'Cancelled' %}
+                                    <span class="text-danger font-weight-bold">{{ item.status }}</span>
+                                  {% elif item.status == 'Return Requested' %}
+                                    <span style="color: goldenrod; font-weight: bold;">{{ item.status }}</span>
+                                  {% elif item.status == 'Return Rejected' %}
+                                    <span style="color: orange; font-weight: bold;">{{ item.status }}</span>
+                                  {% else %}
+                                    <span class="text-primary font-weight-bold">{{ item.status }}</span>
+                                  {% endif %}
+                                </td>
+                                
+                                <td>
+                                  {%if item.status == 'Delivered'%}
+                                    <span ><a href="{% url 'download_invoice' item.order.id item.id%} ">Download</a></span>
+                                  {%else%}
+                                    <span class="text-muted" style="text-decoration: line-through;">Download</span>
+                                  {%endif%}
+
+
+                                </td> 
+
+                                <td>
+                                  
+                                    {% if item.status == "Delivered" %}
+                                        <a class="btn btn-sm btn-warning" data-toggle="modal" data-target="#returnModal{{ item.id }}">Return</a>
+                                    {% elif item.status == "Cancelled" or item.status == "Return Requested" or item.status == "Return Rejected" or item.status == "Returned"%}
+                                      <span class="text-muted">No Action</span>
+                                    {% else %}
+                                      <a  class="btn btn-sm btn-danger" style="color:white" data-toggle="modal"  data-target="#cancelModal{{ item.id }}">Cancel</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <!-- Order Info Split Section -->
+                    <div class="row mt-5">
+                        <!-- Address Left -->
+                        <div class="col-md-6 ">
+                            <h5>Delivery Address</h5>
+                            <p><strong>{{ order.fname }} {{ order.lname }}</strong></p>
+                            <p>{{ order.phone }}</p>
+                            <p>{{ order.address }},</p>
+                            <p>{{ order.city }}, {{ order.state }}, {{ order.country }} - {{ order.pincode }}</p>
                         </div>
-                        <div class="col-md-7">
-                            <h5 class="text-center">Order Details</h5>
-                            <hr>
-                            <table class="table table-bordered col-md-12">
-                                <thead class="text-center">
-                                  <tr>
-                                    <th scope="col">Name</th>
-                                    <th scope="col">Qty</th>
-                                    <th scope="col">Price</th>
-                                    <th scope="col">size</th>
-                                    <th scope="col">Image</th>
-                                  
-                                  </tr>
-                                </thead>
-                                <tbody class="pt-3">
-                                  {% for item in orderitems%}
-                                  <tr>
-                                    <td class="pl-3">{{item.product.name}}</td>
-                                    <td class="pl-3">{{item.quantity}}</td>
-                                    <td class="pl-3">{{item.price}}</td>
-                                    <td class="pl-3">{{item.size}}</td>
-                                    {% comment %} <td class="pl-3">{{item.product.images_set.first.image.url}}</td>  {% endcomment %}
-                                    <td class="pl-3"><img src="{{ item.product.images_set.first.image.url }}" alt="{{ item.product.name }}"  width="75" height="75" /></td>
-                                   
-                                  </tr>
-                                  {% endfor %}
-                                  
-                                </tbody>
-                              </table>
-                              <div>
-                                <h4>Order Summary : </h4>
-                              <h5>Grand Total: <span class="float-end">{{order.total_price}}</span></h5>
-                              <h6> Payment Mode :&nbsp;&nbsp;&nbsp;&nbsp;{{order.payment_mode}}</h6>
-                              <h6> Order Status :&nbsp;&nbsp;&nbsp;&nbsp;{{order.status}}</h6>
-                              <h6> Tracking Id :&nbsp;&nbsp;&nbsp;&nbsp;{{order.tracking_no}}</h6>
-                              {% if order.coupon_discount_amount > 0%}
-                              <h6> Coupon Discount:&nbsp;&nbsp;&nbsp;&nbsp;{{order.coupon_discount_amount}}</h6>
-                              {% endif %}
-                            </div>
+
+                        <!-- Order Summary Right -->
+                        <div class="col-md-6">
+                            <h5>Order Details</h5>
+                            <p><strong>Total:</strong> ₹{{ order.total_price |floatformat:0 }}</p>
+                            <p><strong>Payment Mode:</strong> {{ order.payment_mode }}</p>
+                            <p><strong>Tracking No:</strong> {{ order.tracking_no }}</p>
+                            <p><strong>Shipping Type:</strong> {{ order.shipping_type }}</p>
+                            <p><strong>Shipping Cost:</strong> ₹{{ order.shipping_amount|floatformat:0}}</p>
+                            {% if order.coupon_discount_amount %}
+                            <p><strong>Coupon Discount:</strong> ₹{{ order.coupon_discount_amount|floatformat:0 }}</p>
+                            {% endif %}
+                            {% if order.offer_discount_amount %}
+                            <p><strong>Offer Discount:</strong> ₹{{ order.offer_discount_amount|floatformat:0 }}</p>
+                            {% endif %}
                         </div>
                     </div>
-                </div>
-            </div>
+
+                </div> <!-- card-body -->
+            </div> <!-- card -->
         </div>
     </div>
 </div>
+
+
+{% for item in orderitems %}
+    <div class="modal fade" id="cancelModal{{ item.id }}" tabindex="-1" aria-labelledby="cancelModalLabel{{ item.id }}" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          
+          <div class="modal-header">
+            <h5 class="modal-title" id="cancelModalLabel{{ item.id }}">
+              Cancel Order - {{ item.product.name }}
+            </h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">X</button>
+          </div>
+
+          <div class="modal-body p-4">
+            <form method="post" action="{% url 'cancel_single_item' order.id %}">
+              {% csrf_token %}
+              <div class="form-group">
+                <label for="cancelReason{{ item.id }}">Reason for Cancellation:</label>
+                <textarea class="form-control" id="cancelReason{{ item.id }}" name="cancel_reason" rows="3" required></textarea>
+              </div>
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <div class="mt-3 text-end">
+                <button type="submit" class="btn btn-danger">Cancel Order</button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+{% endfor %}
+
+
+{% for item in orderitems %}
+    <div class="modal fade" id="returnModal{{ item.id }}" tabindex="-1" aria-labelledby="returnModalLabel{{ item.id }}" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h5 class="modal-title" id="returnModalLabel{{ item.id }}">
+              Return Order - {{ item.product.name }}
+            </h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">X</button>
+          </div>
+
+          <div class="modal-body p-4">
+            <form method="post" action="{% url 'return_single_item' order.id %}" >
+              {% csrf_token %}
+              <div class="form-group">
+                <label for="returnReason{{ item.id }}">Reason for Return:</label>
+                <textarea class="form-control" id="returnReason{{ item.id }}" name="return_reason" rows="3" required></textarea>
+              </div>
+              <input type="hidden" name="item_id" value="{{ item.id }}">
+              <div class="mt-3 text-end">
+                <button type="submit" class="btn btn-warning">Request Return</button>
+              </div>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+{% endfor %}
+
+
+
+<div class="modal fade" id="cancelAllModal" tabindex="-1" aria-labelledby="cancelAllModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      
+      <div class="modal-header">
+        <h5 class="modal-title" id="cancelAllModalLabel">
+          Cancel Entire Order - {{ order.tracking_no }}
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">X</button>
+      </div>
+
+      <div class="modal-body p-4">
+        <form method="post" action="{% url 'cancel_order' order.id %}">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="cancelAllReason">Reason for Cancellation:</label>
+            <textarea class="form-control" id="cancelAllReason" name="cancel_reason" rows="3" required></textarea>
+          </div>
+          <div class="mt-3 text-end">
+            <button type="submit" class="btn btn-danger">Cancel Entire Order</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script>
+    {% if messages %}
+    {% for message in messages %}
+        Swal.fire({
+            icon: "{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% endif %}",
+            title: "{{ message.tags }}",
+            text: "{{ message }}",
+        });
+    {% endfor %}
+{% endif %}
+  
+  </script>
+
+
 {% endblock content %}

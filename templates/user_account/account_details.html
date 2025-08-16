@@ -3,16 +3,33 @@
 <div>
     <form action="{% url 'account_details' %}" method="POST">
         {% csrf_token %}
+        <input type="hidden" name="update_info" value="1">
         {{ user_form.first_name.label_tag }}
         {{ user_form.first_name }}
+        {% if user_form.first_name.errors %}
+            <p style="color: red;">{{ user_form.first_name.errors.0}}</p>
+        {% endif %}
+
         {{ user_form.last_name.label_tag }}
         {{ user_form.last_name }}
+        {% if user_form.last_name.errors %}
+            <p style="color: red;">{{ user_form.last_name.errors.0 }}</p>
+        {% endif %}
+
         {{ user_form.username.label_tag }}
         {{ user_form.username }}
+        {% if user_form.username.errors %}
+            <p style="color: red;">{{ user_form.username.errors.0 }}</p>
+        {% endif %}
+
+
         {{ user_form.email.label_tag }}
         {{ user_form.email }}
+        {% if user_form.email.errors %}
+            <p style="color: red;">{{ user_form.email.errors.0 }}</p>
+        {% endif %}
         
-        <button type="submit" name="update_info" class="btn btn-outline-primary-2 " style="margin-left: 300px;">
+        <button type="submit" class="btn btn-outline-primary-2 " style="margin-left: 300px;">
             <span>UPDATE INFORMATION</span>
             <i class="icon-long-arrow-right"></i>
         </button>
@@ -25,14 +42,23 @@
             <div class="col-sm-6">
                 <label>Current Password</label>
                 {{ password_form.current_password }}
+                 {% if password_form.current_password.errors.0 %}
+                    <p style="color: red;">{{ password_form.current_password.errors.0 }}</p>
+                {% endif %}
             </div>
             <div class="col-sm-6">
                 <label>New Password</label>
                 {{ password_form.new_password }}
+                 {% if password_form.new_password.errors %}
+                    <p style="color: red;">{{ password_form.new_password.errors.0 }}</p>
+                {% endif %}
             </div>
         </div>
         <label>Confirm New Password</label>
         {{ password_form.confirm_password }}
+        {% if password_form.confirm_password.errors %}
+            <p style="color: red;">{{ password_form.confirm_password.errors.0 }}</p>
+        {% endif %}
         <button type="submit" name="change_password" class="btn btn-outline-primary-2" style="margin-left: 300px;">
             <span>CHANGE PASSWORD</span>
             <i class="icon-long-arrow-right"></i>
@@ -68,63 +94,5 @@
     {% endif %}
 </script>
 
-<script>
-    {% if error_messages %}
-        {% for message in error_messages %}
-            Swal.fire({
-                icon: '{{ message.tags }}',
-                title: '{{ message.tags }}',
-                text: '{{ message }}'
-            });
-        {% endfor %}
-    {% endif %}
-</script>
 {% endblock account %}
 
-
-{% comment %} 
-{% extends "user_account/user_base_account.html" %}
-{% block account %}
-                <div >
-                    <form action="{% url 'update_account_details' %}" method="POST">
-                        {% csrf_token %}
-                                    <div class="row">
-                                    
-                                        <div class="col-sm-6">
-                                            <label>First Name *</label>
-                                            <input type="text" name="first_name" value="{{account_datails.first_name}}" class="form-control" required>
-                                        </div><!-- End .col-sm-6 -->
-
-                                        <div class="col-sm-6">
-                                            <label>Last Name *</label>
-                                            <input type="text" name="last_name"  value="{{account_datails.last_name}}" class="form-control" required>
-                                        </div><!-- End .col-sm-6 -->
-                                    </div><!-- End .row -->
-
-                                    <label>Display Name *</label>
-                                    <input type="text" name="username"  value="{{account_datails.username}}" class="form-control" required>
-                                    <small class="form-text">This will be how your name will be displayed in the account section and in reviews</small>
-
-                                    <label>Email address *</label>
-                                    <input type="email" name="email"  value="{{account_datails.email}}" class="form-control" required>
-
-                                    <label>Current password (leave blank to leave unchanged)</label>
-                                    <input type="password" name="password" value="{{account_datails.password}}" class="form-control">
-
-                                   
-
-                                    <button type="submit" class="btn btn-outline-primary-2">
-                                        <span>SAVE CHANGES</span>
-                                        <i class="icon-long-arrow-right"></i>
-                                    </button>
-                </form>
-                            
-                            </div><!-- .End .tab-pane --> 
-{% endblock account %} {% endcomment %}
-
-
- {% comment %} <label>New password (leave blank to leave unchanged)</label>
-                                    <input type="password" class="form-control">
-
-                                    <label>Confirm new password</label>
-                                    <input type="password" class="form-control mb-2"> {% endcomment %}

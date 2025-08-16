@@ -11,13 +11,7 @@
                 <h3 class="card-title">Coupon Code : <span style="background : green;color : white"> {{ coupon.coupon_code | upper }}</span></h3><!-- End .card-title -->
                  
                     <p styl>Minimum Amount : &nbsp<span style="color : black;font-size: 18px">{{ coupon.minimum_amount }}</span></p>
-                    <p>Discount Amount : &nbsp<span style="color : black;font-size: 18px">{{ coupon.discound_amount }}</span></p>
-                        {% comment %} {{ address.email }}<br>
-                        {{ address.phone }}<br>
-                        {{ address.address }}<br>
-                        {{ address.city }}, {{ address.state }}<br>
-                        {{ address.country }} {{ address.pincode }}<br> {% endcomment %}
-                        
+                    <p>Discount Percentage : &nbsp<span style="color : black;font-size: 18px">{{ coupon.discount_percentage }}%</span></p>
                 
         
             </div><!-- End .card-body -->

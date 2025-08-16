@@ -25,7 +25,75 @@
 				<form action="{%url 'sign_up'%}" method="POST">
 					{% csrf_token %}
 					<h3>Registration Form</h3>
-					<div class="form-group">
+                    <div class="form-wrapper">
+						{{ form.first_name }}
+						{% comment %} {% if form.first_name.errors %}
+							<p style="color: red;">{{ form.first_name.errors.0 }}</p>
+						{% endif %} {% endcomment %}
+					</div>
+
+					<div class="form-wrapper">
+						{{ form.last_name }}
+						{% comment %} {% if form.last_name.errors %}
+							<p style="color: red;">{{ form.last_name.errors.0 }}</p>
+						{% endif %} {% endcomment %}
+					</div>
+		            
+					<div class="form-wrapper">
+						{{ form.username }}
+						{% comment %} {% if form.username.errors %}
+							<p style="color: red;">{{ form.username.errors.0 }}</p>
+						{% endif %} {% endcomment %}
+					</div>
+                    
+					<div class="form-wrapper">
+						{{ form.email }}
+						{% comment %} {% if form.email.errors %}
+							<p style="color: red;">{{ form.email.errors.0 }}</p>
+						{% endif %} {% endcomment %}
+					</div>
+                    
+					<div class="form-wrapper">
+						{{ form.password1 }}
+						{% comment %} {% if form.password1.errors %}
+							<p style="color: red;">{{ form.password1.errors.0 }}</p>
+						{% endif %} {% endcomment %}
+					</div>
+
+					<div class="form-wrapper">
+						{{ form.password2 }}
+						{% comment %} {% if form.password2.errors %}
+							<p style="color: red;">{{ form.password2.errors.0 }}</p>
+						{% endif %} {% endcomment %}
+					</div>
+                    
+					 {% comment %} {% if form.non_field_errors %}
+						<ul>
+							{% for error in form.non_field_errors %}
+								<li style="color:red;">{{ error }}</li>
+							{% endfor %}
+						</ul>
+					{% endif %} {% endcomment %}
+
+					{% if form.errors %}
+    <div style="margin: 10px 0; color: red;">
+        <ul>
+            {% for field, errors in form.errors.items %}
+                {% if forloop.first %}
+                    <li>{{ errors.0 }}</li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
+{% elif form.non_field_errors %}
+    <div style="margin: 10px 0; color: red;">
+        <ul>
+            <li>{{ form.non_field_errors.0 }}</li>
+        </ul>
+    </div>
+{% endif %}
+
+					{% comment %} <div class="form-group">
 						<input type="text" name="first_name" placeholder="First Name" class="form-control" >
 						<input type="text" name="last_name" placeholder="Last Name" class="form-control" >
 					</div>
@@ -38,10 +106,6 @@
 						
 						<i class="zmdi zmdi-email"></i>
 					</div>
-					{% comment %} <div class="form-wrapper">
-						<input type="tel" name="phone" placeholder="Phone Nmber" class="form-control" required>
-						<i class="zmdi zmdi-phone"></i>
-					</div> {% endcomment %}
 					
 					<div class="form-wrapper">
 						<input type="password" name="password1" placeholder="Password" class="form-control" >
@@ -53,7 +117,7 @@
 					</div>
 					{% for message in messages %}
                         <p class="text-danger">{{ message }}</p>
-                      {% endfor %}
+                      {% endfor %} {% endcomment %}
 					<button type="submit">Register
 						<i class="zmdi zmdi-arrow-right"></i>
 					</button>

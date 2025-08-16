@@ -22,7 +22,8 @@
                                 Message: {{ address.message }}
                             {% endif %}
                     <a href="{% url 'edit_address' address.id %}">Edit <i class="icon-edit"></i></a></p>
-                    <a href="{% url 'delete_user_address' address.id %}">Delete</a>
+                    <a class="delete-address" data-url="{% url 'delete_user_address' address.id %}">Delete</a>
+                    
             
                 </div><!-- End .card-body -->
             </div><!-- End .card-dashboard -->
@@ -31,7 +32,10 @@
       
     </div><!-- End .row -->
     {% else %}
-    <p>You have no address</p>
+     <div class="text-center p-5 bg-light rounded shadow-sm">
+            <p class="p-5">You have no address added yet.</p>
+            {% comment %} <a href="#">Add New Address</a> {% endcomment %}
+        </div>
     {% endif %}
 </div><!-- .End .tab-pane --> 
 
@@ -50,4 +54,31 @@
         {% endfor %}
     {% endif %}
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".delete-address").forEach(function(button) {
+        button.addEventListener("click", function(e) {
+            e.preventDefault();
+            let deleteUrl = this.getAttribute("data-url");
+
+            Swal.fire({
+                title: "Are you sure?",
+                text: "Once deleted, this address will be removed from your account.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Yes, delete it"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Redirect to delete URL
+                    window.location.href = deleteUrl;
+                }
+            });
+        });
+    });
+});
+</script>
+
 {% endblock account %}

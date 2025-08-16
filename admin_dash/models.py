@@ -11,18 +11,10 @@ class Offer(models.Model) :
     end_date = models.DateTimeField()
     discount_percentage = models.DecimalField(max_digits=10, decimal_places=2)
     is_block = models.BooleanField(default=False)
-    is_valid = models.BooleanField(default=True)
 
-    # def is_valid(self):
-    #     now = timezone.now()
-    #     return self.start_date <= now <= self.end_date 
-
-    def save(self, *args, **kwargs):
-        # Automatically update is_valid based on the condition
-        if self.end_date < self.start_date:
-            self.is_valid = False
-
-        super().save(*args, **kwargs)   
+    def is_valid(self):
+        now = timezone.now()
+        return self.start_date <= now <= self.end_date 
     
     def __str__(self) -> str:
         return self.title
@@ -30,7 +22,7 @@ class Offer(models.Model) :
 
 class Category(models.Model) :
     name = models.CharField(max_length=150)
-    description = models.TextField(max_length=250,default='Product description')
+    description = models.TextField(max_length=250,default='Category description')
     offer = models.ForeignKey(Offer, on_delete=models.SET_NULL, blank=True, null=True)
     is_available = models.BooleanField(default=True)
 
@@ -41,7 +33,7 @@ class Category(models.Model) :
 
 class Brand(models.Model) :
     name = models.CharField(max_length=100)
-    is_block = models.BooleanField(default=False)
+    is_available = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return self.name
@@ -58,6 +50,12 @@ class Product(models.Model) :
     is_available = models.BooleanField(default=True)
     brand = models.ForeignKey(Brand, on_delete=models.CASCADE)
     offer = models.ForeignKey(Offer, on_delete=models.SET_NULL, blank=True, null=True)
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    
 
     def discounted_price(self):
         discounted_price = self.price
@@ -82,16 +80,18 @@ class Images(models.Model) :
         verbose_name = 'photo'
         verbose_name_plural = 'photos'   
 
+
 class Variants(models.Model) :
     size = models.FloatField(blank=True, null=True)
-    quantity = models.IntegerField(default=0)
+    quantity = models.IntegerField()
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    is_available = models.BooleanField(default=True)
 
 
 class Banner(models.Model) :
-    title = models.CharField(max_length=150,null=True)
-    subtitle_1 = models.CharField(max_length=200,null=True)
-    subtitle_2 = models.CharField(max_length=200,null=True)
+    title = models.CharField(max_length=150) 
+    subtitle_1 = models.CharField(max_length=200)
+    subtitle_2 = models.CharField(max_length=200)
     banner = models.ImageField(upload_to='banner/img')
     is_available = models.BooleanField(default=True)
     

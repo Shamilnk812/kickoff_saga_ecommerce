@@ -15,9 +15,11 @@ from django.core.exceptions import ValidationError
 import re
 from django.core.exceptions import ObjectDoesNotExist
 from django.views.decorators.cache import never_cache
+from django.db import transaction
+from cart.utils import create_payment
+from django.contrib.auth import logout
 
-# ------------------------ View orders (a specific user's order) --------------------
-
+# ------------ View all orders (a specific user's order) -------------
 
 @login_required(login_url='log_in')
 def user_orders(request) :
@@ -27,66 +29,233 @@ def user_orders(request) :
 
 
 
-#---------------------- View single order details --------------------
+#---------------- View single order details --------------
 @login_required(login_url='log_in')
-def view_order(request,t_no) :
-    order = Order.objects.filter(tracking_no=t_no).filter(user=request.user).first()
-    orderitems = OrderItem.objects.filter(order=order)
+def view_order(request,order_id) :
+    order = Order.objects.filter(id=order_id, user=request.user).first()
+    orderitems = OrderItem.objects.filter(order=order).order_by('id')
+    cancellable_statuses = ['Pending', 'Confirmed', 'Out for Shipping', 'Shipped', 'Out for Delivery']
+    cancellable_items = orderitems.filter(status__in=cancellable_statuses)
+    can_cancel_all = cancellable_items.exists()
+
     context={
         'order':order,
-        'orderitems':orderitems
+        'orderitems':orderitems,
+        'can_cancel_all': can_cancel_all,
     }
     return render(request,'user_account/view_single_order.html',context)
 
 
 
-#--------------------- Cancel order --------------------
+#--------------------- Cancel order ----------------------
+
 @login_required(login_url='log_in')
-def cancel_order(request, t_no):
+def cancel_order(request, order_id):
 
     if request.method == 'POST':    
+        cancel_reason = request.POST.get('cancel_reason', '').strip()
 
-        cancel_reason = request.POST.get('cancel_reason', '')
-        order_item = get_object_or_404(Order, tracking_no=t_no)
+        if not cancel_reason:
+            messages.error(request, "Cancel reason is required.")
+            return redirect('view_order', order_id=order_id)
+        if len(cancel_reason) < 10:
+            messages.error(request, "Cancel reason must be at least 10 characters.")
+            return redirect('view_order', order_id=order_id)
+        if cancel_reason.isdigit() or re.fullmatch(r'[^\w\s]+', cancel_reason):
+            messages.error(request, "Cancel reason must contain valid text.")
+            return redirect('view_order', order_id=order_id)
 
-        # Ensure user has a wallet
-        user_wallet, created = Wallet.objects.get_or_create(user=request.user, defaults={'wallet': 0})
-        
-        if user_wallet is None:
-            raise Exception("User wallet not found or could not be created.")
+       
+        try:
+            with transaction.atomic():
 
-        order_items = OrderItem.objects.filter(order=order_item)
+                order = Order.objects.select_for_update().get(user=request.user, id=order_id)
+                cancellable_statuses = ['Pending', 'Confirmed', 'Out for Shipping', 'Shipped', 'Out for Delivery']
+                order_items = OrderItem.objects.filter(order=order)
+                cancellable_items = order_items.filter(status__in=cancellable_statuses)
 
-        for item in order_items:
-            product = item.product
-            size = item.size
-            variant = Variants.objects.filter(product=product,size=size).first()
-            if variant:
-                variant.quantity += item.quantity
-                variant.save()
+                if not cancellable_items.exists():
+                    messages.error(request, "No items in this order are eligible for cancellation.")
+                    return redirect('view_order', order_id=order_id)
 
-        if order_item.payment_mode == 'paid by razorpay' or order_item.payment_mode == 'paid by wallet':
-            if user_wallet.wallet is None:
-                user_wallet.wallet = 0  # Set wallet to 0 if it is None
-            user_wallet.wallet += order_item.total_price
-            user_wallet.save()
+                user_wallet, created = Wallet.objects.get_or_create(user=request.user, defaults={'wallet': 0})
 
-        order_item.cancel_reason = cancel_reason     
-        order_item.status = 'Cancel'
-        order_item.save()
+                # Product variants restoring
+                for item in cancellable_items:
+                    product = item.product
+                    size = item.size
+                    variant = Variants.objects.filter(product=product, size=size).first()
+                    if variant:
+                        variant.quantity += item.quantity
+                        variant.save()
+
+                # Update user wallet if that paid by razorypay or wallet
+                if order.payment_mode == 'paid by razorpay' or order.payment_mode == 'paid by wallet':
+                    if user_wallet.wallet is None:
+                        user_wallet.wallet = 0
+                    total_refund = 0
+                    for item in cancellable_items:
+                        item_total_price = item.price * item.quantity
+                        user_wallet.wallet += item_total_price
+                        total_refund += item_total_price
+                    user_wallet.save()
+
+                    # Create payment for tracking payment history
+                    create_payment(
+                        user=request.user,
+                        order=order,
+                        transaction_type='Refund',
+                        amount=total_refund,
+                        payment_mode=order.payment_mode,
+                        description=f'Refund for cancelled items in Order {order.tracking_no}'
+                    )
+
+
+                for item in cancellable_items:
+                    item.status = 'Cancelled'
+                    item.cancel_reason = cancel_reason
+                    item.cancelled_by = 'user'
+                    item.save()
+                
+        except Exception as e:
+            messages.error(request, f"An error occurred while canceling the order")
+            return redirect('view_order', order_id=order_id)
+
         messages.success(request, 'Order canceled successfully.')
-        return HttpResponseRedirect(reverse('user_orders'))
+        return redirect('view_order', order_id=order_id)
+    
 
-    return HttpResponse("Invalid request method.", status=405)
+
+@login_required(login_url='log_in')
+def cancel_single_item(request, order_id):
+    if request.method == 'POST':
+        cancel_reason = request.POST.get('cancel_reason', '').strip()
+        item_id = request.POST.get('item_id')
+
+        if not cancel_reason:
+            messages.error(request, "Cancel reason is required.")
+            return redirect('view_order', order_id=order_id)
+        if len(cancel_reason) < 10:
+            messages.error(request, "Cancel reason must be at least 10 characters.")
+            return redirect('view_order', order_id=order_id)
+        if cancel_reason.isdigit() or re.fullmatch(r'[^\w\s]+', cancel_reason):
+            messages.error(request, "Cancel reason must contain valid text.")
+            return redirect('view_order', order_id=order_id)
+        if not item_id:
+            messages.error(request, "Something went wrong. Please try again later.")
+            return redirect('view_order', order_id=order_id)
+
+        try:
+            with transaction.atomic():
+                order = Order.objects.select_for_update().get(user=request.user, id=order_id)
+                order_item = OrderItem.objects.select_for_update().get(order=order, id=item_id)
+
+                cancellable_statuses = ['Pending', 'Confirmed', 'Out for Shipping', 'Shipped', 'Out for Delivery']
+                if order_item.status not in cancellable_statuses:
+                    messages.error(request, "You cannot cancel this item at its current status.")
+                    return redirect('view_order', order_id=order_id)
+
+                # Restore product variants 
+                item_variants = Variants.objects.select_for_update().filter(
+                    product=order_item.product, size=order_item.size
+                ).first()
+                if item_variants:
+                    item_variants.quantity += order_item.quantity
+                    item_variants.save()
+
+                # Update user wallet if that paid by razorypay or wallet
+                user_wallet, _ = Wallet.objects.get_or_create(user=request.user, defaults={'wallet': 0})
+                refund_amount = 0
+                if order.payment_mode in ['paid by razorpay', 'paid by wallet']:
+                    if user_wallet.wallet is None:
+                        user_wallet.wallet = 0
+                    refund_amount = order_item.price * order_item.quantity
+                    user_wallet.wallet += refund_amount
+                    user_wallet.save()
+                    
+                    # Create transaction history
+                    create_payment(
+                        user=request.user,
+                        order=order,
+                        transaction_type='Refund',
+                        amount=refund_amount,
+                        payment_mode=order.payment_mode,
+                        description=f"Refund for cancellation of '{order_item.product.name}' (Qty: {order_item.quantity}) from Order {order.tracking_no}."
+                    )
+
+                # Update order item
+                order_item.cancel_reason = cancel_reason
+                order_item.status = 'Cancelled'
+                order_item.cancelled_by = 'user'
+                order_item.save()
+
+                messages.success(request, "Item cancelled successfully. Refund processed if applicable.")
+                return redirect('view_order', order_id=order_id)
+
+        except Order.DoesNotExist:
+            messages.error(request, "Order not found or doesn't belong to you.")
+        except OrderItem.DoesNotExist:
+            messages.error(request, "The item you are trying to cancel does not exist in your order.")
+        except Exception as e:
+            messages.error(request, "An unexpected error occurred during cancellation")
+
+        return redirect('view_order', order_id=order_id)
+    
+
+       
 
 
-  
+#--------------------- Return Order -------------------
+
+@login_required(login_url='log_in')
+def return_single_item(request, order_id):
+    if request.method == 'POST':
+        item_id = request.POST.get('item_id')
+        return_reason = request.POST.get('return_reason').strip()
+        
+        if not return_reason:
+            messages.error(request, "Return reason is required.")
+            return redirect('view_order', order_id=order_id)
+        if len(return_reason) < 10:
+            messages.error(request, "Return reason must be at least 10 characters. Please enter valid reason.")
+            return redirect('view_order', order_id=order_id)
+        if return_reason.isdigit() or re.fullmatch(r'[^\w\s]+', return_reason):
+            messages.error(request, "Return reason must contain valid text, not just digits or special characters.")
+            return redirect('view_order', order_id=order_id)
+        if not item_id :
+            messages.error(request, "somthing wrong with order. Please try again later")
+            return redirect('view_order', order_id=order_id)
+        
+        try:
+            order = Order.objects.get(user=request.user,id=order_id)
+        except Order.DoesNotExist:
+            messages.error(request, "Order not found or does not belong to you.")
+            return redirect('view_order', order_id=order_id)
+        
+        try:
+            order_item = OrderItem.objects.get(order=order,id=item_id)
+        except OrderItem.DoesNotExist:
+            messages.error(request, "The item you are trying to cancel does not exist in your order.")
+            return redirect('view_order', order_id=order_id)
+        
+        if order_item.status == 'Delivered':
+            order_item.status = 'Return Requested'
+            order_item.return_reason = return_reason
+            order_item.save()
+            messages.success(request, "Return request submitted successfully.")
+        else:
+             messages.error(request, f"This item cannot be returned because it is currently marked as '{order_item.status}'.")
+        
+        return redirect('view_order', order_id=order_id)
+
+        
+
     
 # --------------------- View user wallet and coupons -------------------
 
 @login_required(login_url='log_in')
 def user_wallet(request):
-    coupons = Coupon.objects.filter(is_expired=False) 
+    coupons = Coupon.objects.filter(is_active=True) 
     try:
         wallet_instance = Wallet.objects.get(user=request.user)
     except ObjectDoesNotExist:
@@ -97,11 +266,11 @@ def user_wallet(request):
     
 
 
-# --------------------- User addresss management --------------
+# ----------------- User addresss management --------------
 
 @login_required(login_url='log_in')
 def user_address(request) :
-    new_address = Address.objects.all().order_by('-id')
+    new_address = Address.objects.filter(user=request.user).order_by('-id')
     context = {
         'new_address':new_address
     }
@@ -173,84 +342,78 @@ def delete_user_address(request, ad_id) :
     return redirect('user_address')
    
 
-
 @login_required(login_url='log_in')
 def account_details(request):
-    user = request.user
-    user_form = UserUpdateForm(instance=user)
-    password_form = ChangePasswordForm()
-    password_updated = False
-
-    if request.method == 'POST':
-        if 'update_info' in request.POST:
-            user_form = UserUpdateForm(request.POST, instance=user)
+    if request.method == "POST":
+        if 'update_info' in request.POST:  
+            user_form = UserUpdateForm(request.POST, instance=request.user)
+            password_form = ChangePasswordForm()
             if user_form.is_valid():
-                username = user_form.cleaned_data.get('username')
-                if username.isdigit():
-                    user_form.add_error('username', 'Username must not contain only digits.')
+                user_form.save()
+                messages.success(request, 'User info updated.')
+                return redirect('account_details') 
+          
 
-                # Check if the username already exists
-                if User.objects.filter(username=username).exclude(id=user.id).exists():
-                    user_form.add_error('username', 'Username already exists.')
-
-                # Custom email validation
-                email = user_form.cleaned_data.get('email')
-                if User.objects.filter(email=email).exclude(id=user.id).exists():
-                    user_form.add_error('email', 'Email already exists.')
-                if not re.match(r'^\S+@\S+\.\S+$', email):
-                    user_form.add_error('email', 'Please enter a valid email address.')
-
-                if not user_form.errors:
-                    user_form.save()
-                    messages.success(request, 'User information updated successfully')
-                    return redirect('account_details')
-                else:
-                    for field, errors in user_form.errors.items():
-                        for error in errors:
-                            messages.error(request, f'Error in {field}: {error}')
-
-        if 'change_password' in request.POST:
+        elif 'change_password' in request.POST:
+            user_form = UserUpdateForm(instance=request.user)
             password_form = ChangePasswordForm(request.POST)
             if password_form.is_valid():
+                user = request.user
                 current_password = password_form.cleaned_data['current_password']
                 new_password = password_form.cleaned_data['new_password']
 
                 if user.check_password(current_password):
                     user.set_password(new_password)
                     user.save()
-                    password_updated = True
-                    messages.success(request, 'Password updated successfully. Please log in.')
-                    login_url = reverse('log_in')
-
-                    return redirect(login_url)
+                    logout(request)
+                    messages.success(request, 'Password updated successfully. Please log in again.')
+                    return redirect(reverse('log_in'))
                 else:
-                    messages.error(request, 'Current password is incorrect')
+                    messages.error(request, 'Your current password is incorrect')
+                    return redirect('account_details') 
+                        
+    else:
+        user_form = UserUpdateForm(instance=request.user)
+        password_form = ChangePasswordForm()
 
-    context = {
+    return render(request, 'user_account/account_details.html', {
         'user_form': user_form,
         'password_form': password_form,
-        'password_updated': password_updated,
-    }
-    return render(request, 'user_account/account_details.html', context)
+    })
+
+
+
+#--------------- Transactoin History -------------
+def Transaction_histroy(request):
+    payment_history = PaymentHistory.objects.filter(user=request.user).order_by('-timestamp')
+    return render(request, 'user_account/payment_history.html', {'payment_history':payment_history})
 
 
 
 # ---------------- Download invoice -------------
-def generate_invoice(request, order_id):
+
+def generate_invoice(request, order_id, order_item_id):
+    # Get the order and order item
     order = get_object_or_404(Order, id=order_id)
+    order_item = get_object_or_404(OrderItem, id=order_item_id, order=order)
+
+    # Check if delivered
+    if order_item.status != 'Delivered':
+        messages.error(request, "Invoice can only be generated for delivered items.")
+        return redirect('view_order', order_id=order_id)
+        
     invoice_number = str(random.randint(100000, 999999))
     context = {
         'order': order,
-        'invoice_number':invoice_number,
+        'order_item': order_item,
+        'invoice_number': invoice_number,
     }
+
     pdf = render_to_pdf('pdfs/invoice.html', context)
-    
     if pdf:
+        filename = f"invoice_{order.id}_{order_item.id}.pdf"
         response = HttpResponse(pdf, content_type='application/pdf')
-        filename = f"invoice_{order.id}.pdf"
-        content = 'inline; filename="%s"' % filename
-        response['Content-Disposition'] = content
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
-    else:
-        print("Error generating the PDF.")
-        return HttpResponse("Error generating the invoice.")
+    messages.error(request, 'Failed to generate the invoice. Please try agin later')
+    return redirect('view_order', order_id=order_id)

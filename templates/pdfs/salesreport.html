@@ -48,7 +48,14 @@
         <div class="invoice-inner">
             <div class="invoice-info" id="invoice_wrapper">
                 <div class="invoice-center text-center">
-                    <h1>Kick off</h1>
+                    <h1>Kickoff Saga </h1>
+                     <h2>Sales Report</h2>
+
+                    {% if start_date and end_date %}
+                        <p><strong>Date Range:</strong> {{ start_date }} to {{ end_date }}</p>
+                    {% else %}
+                        <p><strong>Time Range:</strong> {{ time_range|title }}</p>
+                    {% endif %}
 
                     <div class="table-responsive">
                         <h1>Sales Report</h1>
@@ -64,17 +71,17 @@
                                 </tr>
                             </thead>
                             <tbody>
-                             {% for order in orders%} 
-                                {% for item in order.orderitem_set.all %}
+                             {% for item in orders%} 
+                               
                                 <tr>
                                     <td>{{ forloop.counter }}</td>
-                                    <td>{{ order.tracking_no }}</td>
-                                    <td>{{ order.user.username }}</td>
+                                    <td>{{ item.order.tracking_no }}</td>
+                                    <td>{{ item.order.fname }} {{item.order.lname}}</td>
                                     <td>{{ item.product.name }}</td>
                                     <td>{{ item.quantity }}</td>
-                                    <td>${{ item.total_price }}</td>
+                                    <td>{{ item.total_price|floatformat:0 }}</td>
                                 </tr>
-                                {% endfor %}
+                                
                                 {% endfor %}
                             </tbody>
                         </table>

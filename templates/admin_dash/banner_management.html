@@ -10,9 +10,10 @@
       <div class="row">
         <div class="col-lg-12 grid-margin stretch-card">
           <div class="card">
+             {% include "alert.html" %}
             <div class="card-body">
-              <h4 class="card-title">Banner</h4>
-              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_banner_image'%}">+ Add Banner
+              <h4 class="card-title text-center">Banner Management</h4>
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_banner_image'%}">+ Add Banner
               </a></label>
               <div class="table-responsive">
                 <table class="table">
@@ -27,20 +28,27 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {% for banner in all_banner %}
-                    <tr>
-                      <td>{{ forloop.counter }}</td>
-                      <td>{{ banner.title}}</td>
-                      <td>{{ banner.subtitle_1 }}</td>
-                      <td>{{ banner.subtitle_2}}</td>
-                      <td><img src="{{ banner.banner.url }}" alt="Banner Image"></td>
-                      {% if banner.is_available == True %}
-                          <td><label class="badge badge-danger"><a style="color: white;" href="{% url 'delete_banner' banner.id %}">Block</a></label></td>
-                      {% else%}
-                          <td><label class="badge badge-success"><a style="color: white;" href="{% url 'delete_banner' banner.id %}">Unblock</a></label></td>
-                    {% endif %}
-                    </tr>
-                     {% endfor %}
+                    {%if all_banner%}
+                        {% for banner in all_banner %}
+                        <tr>
+                          <td>{{ forloop.counter }}</td>
+                          <td>{{ banner.title}}</td>
+                          <td>{{ banner.subtitle_1 }}</td>
+                          <td>{{ banner.subtitle_2}}</td>
+                          <td><img src="{{ banner.banner.url }}" alt="Banner Image"></td>
+                          {% if banner.is_available == True %}
+                              <td><a class="btn btn-sm btn-danger" style="color: white;" href="{% url 'delete_banner' banner.id %}">Block</a></td>
+                          {% else%}
+                              <td><a class="btn btn-sm btn-success" style="color: white;" href="{% url 'delete_banner' banner.id %}">Unblock</a></td>
+                        {% endif %}
+                        </tr>
+                        {% endfor %}
+                    {%else%}
+                      <tr >
+                        <td colspan="6" class="text-center p-5">No banner added  yet.</td>
+                     </tr>
+
+                    {%endif%}
                   </tbody>
                 </table>
               </div>
@@ -49,9 +57,7 @@
         </div>
       
      </div>
-          {% for message in messages %}
-          <p>{{message}}</P>
-          {% endfor %}
+        
   </div>
   </div>
 

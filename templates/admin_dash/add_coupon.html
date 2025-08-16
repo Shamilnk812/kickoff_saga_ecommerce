@@ -18,21 +18,35 @@
               {% endfor %}
               <form class="forms-sample" action="{% url 'add_coupon'%}" method='POST'>
                 {% csrf_token %}
+
+                 <div class="form-group">
+                  {{ form.coupon_code.label_tag }}
+                  {{ form.coupon_code }}
+                  {% if form.coupon_code.errors %}
+                      <p style="color: red;">{{ form.coupon_code.errors.0 }}</p>
+                  {% endif %}
+              </div>
+
+
+              <div class="form-group">
+                  {{ form.minimum_amount.label_tag }}
+                  {{ form.minimum_amount }}
+                  {% if form.minimum_amount.errors %}
+                      <p style="color: red;">{{ form.minimum_amount.errors.0 }}</p>
+                  {% endif %}
+              </div>
+
+              <div class="form-group">
+                  {{ form.discount_percentage.label_tag }}
+                  {{ form.discount_percentage }}
+                  {% if form.discount_percentage.errors %}
+                      <p style="color: red;">{{ form.discount_percentage.errors.0 }}</p>
+                  {% endif %}
+              </div>
                 
-                <div class="form-group">
-                  <label for="exampleInputUsername1">Coupon Code</label>
-                  <input type="text" name="coupon" class="form-control" id="exampleInputUsername1" placeholder=" Enter code">
-               </div>
-               <div class="form-group">
-                  <label for="exampleInputUsername1">Minimum amount</label>
-                  <input type="text" name="minimum_amount" class="form-control" id="exampleInputUsername1" placeholder="minimum amount">
-               </div>
-               <div class="form-group">
-                  <label for="exampleInputUsername1">Discount amount</label>
-                  <input type="text" name="discount_amount" class="form-control" id="exampleInputUsername1" placeholder="discount amount">
-               </div>
+              
                    <button type="submit" class="btn btn-success mr-2"> Add </button>
-                   <button class="btn btn-dark" > <a href="{% url 'view_coupons'%}">Cancel</a></button>
+                   <a class="btn btn-dark" href="{% url 'view_coupons'%}">Cancel</a>
               </form>
              
             </div>

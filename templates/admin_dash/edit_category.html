@@ -1,28 +1,19 @@
 {% extends "admin_dash/dash.html" %}
 {% load static%}
 {% block content %}
-{% comment %} 
-{% for category in all_category%} {% endcomment %}
+
 <div class="main-panel">
     <div class="content-wrapper">
       <div class="page-header">
         <h3 class="page-title">Category Management</h3>
-        {% comment %} <nav aria-label="breadcrumb">
-          <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="#">Forms</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Form elements</li>
-          </ol>
-        </nav> {% endcomment %}
       </div>
     
         <div class="col-md-6 grid-margin stretch-card">
           <div class="card">
             <div class="card-body">
-              <h4 class="card-title">Add Category</h4>
-              <p class="card-description"> Basic form layout </p>
-              
+              <h4 class="card-title">Edit Category</h4>
               <form class="forms-sample" action="{% url 'update_category' category.id %}"  method='POST'>
-                {% if category %}
+      
                 {% csrf_token %}
                 <div class="form-group">
                   {{ form.name.label_tag }}
@@ -40,59 +31,25 @@
                   {% endif %}
               </div>
               
-                <div class="form-group">
+                {% comment %} <div class="form-group">
                   {{ form.offer.label_tag }}
                   {{ form.offer }}
                   {% if form.offer.errors %}
                       <p style="color: red;">{{ form.offer.errors.0 }}</p>
                   {% endif %}
-              </div>
-                {% comment %} <div class="form-group">
-                  <label for="exampleInputUsername1">Category</label>
-                  <input type="text"  name="category_name" value="{{category.name}}" class="form-control" id="exampleInputUsername1" placeholder="Category name">
-                </div>
-                <div class="form-group">
-                  <label for="exampleInputUsername1">Description</label>
-                  <input type="text"  name="description" value="{{category.description}}" class="form-control" id="exampleInputUsername1" placeholder="Enter Description">
-                </div>
-                 {% endcomment %}
-               
-                
-                
+              </div> {% endcomment %}
+  
                 <button type="submit" class="btn btn-success mr-2"> Save </button>
-                {% comment %} <label class="badge badge-success"><a style="color : white;" href="{% url 'update_category' category.id %}">Save Changes</a></label> {% endcomment %}
-                
-                <button class="btn btn-dark"><a href="{% url 'category_management'%}">Cancel</a></button>
-                {% endif %}
-              </form>
-              {% comment %} {% endfor %} {% endcomment %}
-           
+                 <a class="btn btn-dark" href="{% url 'category_management'%}">Cancel</a>
+
+                </form>       
             </div>
           </div>
         </div>
     </div>
 </div>
-{% comment %} {% for message in messages %}
-<div class="alert alert-{{ message.tags }}">
-    {{ message }}
-</div>
-{% endfor %} {% endcomment %}
-{% comment %} 
-<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-      const successMessage = document.querySelector(".alert-success");
-      const errorMessage = document.querySelector(".alert-danger");
 
-      if (successMessage) {
-          swal("Success", successMessage.textContent, "success");
-      }
 
-      if (errorMessage) {
-          swal("Error", errorMessage.textContent, "error");
-      }
-  });
-</script> {% endcomment %}
 
 
 {% endblock content %}

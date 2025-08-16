@@ -56,8 +56,8 @@
             <input type="email" name="email" value="{{address.email}}"  class="form-control" >
 
 
-            <label>Order notes (optional)</label>
-            <textarea class="form-control" cols="30" value="{{address.message}}"  rows="4" placeholder="Notes about your order, e.g. special notes for delivery"></textarea>
+            {% comment %} <label>Order notes (optional)</label>
+            <textarea class="form-control" cols="30" value="{{address.message}}"  rows="4" placeholder="Notes about your order, e.g. special notes for delivery"></textarea> {% endcomment %}
        </div><!-- End .col-lg-9 -->
        <button type="submit" class="btn btn-success " style="margin-left: 350px">Save Changes</button>
     </form>

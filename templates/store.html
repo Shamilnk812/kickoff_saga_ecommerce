@@ -89,6 +89,7 @@
                     </div><!-- End .toolbox -->
 
                     <div class="products mb-3">
+                        {% if all_products%}
                         <div class="row justify-content-center">
                         {% for product in all_products %}
                             <div class="col-6 col-md-4 col-lg-4 col-xl-3">
@@ -157,11 +158,18 @@
                             
 
                            
-
+                        
                             
 
                           
                         </div><!-- End .row -->
+                        {%else%}
+                        <div class="text-center py-5">
+                            <h4 style="color: #c96;">No products found</h4>
+                            <p>Try adjusting your filters or search keyword.</p>
+                        </div>
+                        {%endif%}
+
                     </div><!-- End .products -->
 
 
@@ -183,6 +191,7 @@
                             </li>
                         </ul>
                     </nav> {% endcomment %}
+                    {%if all_products%}
                     <nav aria-label="Page navigation">
                        
                             <ul class="pagination justify-content-center">
@@ -220,6 +229,7 @@
                             </ul>
                         
                     </nav>
+                    {%endif%}
                 </div><!-- End .col-lg-9 -->
                 <aside class="col-lg-3 order-lg-first">
                     <div class="sidebar sidebar-shop">

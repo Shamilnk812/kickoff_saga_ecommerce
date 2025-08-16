@@ -6,14 +6,24 @@
 <div class="main-panel">
     <div class="content-wrapper">
       <div class="page-header">
-        <h4 class="card-title">OFFER &nbspMANAGEMENT</h4>
+        <h4 class="card-title">Category Offers</h4>
+        <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                  <li class="nav-item w-100">
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'view_category_offers' %}" method="get" >
+                      <input type="text" class="form-control" placeholder="Search category.." name="query" id="query" value="{{ query|default_if_none:'' }}">
+                      <button class="btn btn-primary" type="submit">Search</button>
+                    </form>
+                  </li>
+                </ol>
+              </nav>       
       </div>
       {% comment %} <div class="row"> {% endcomment %}
         <div class="col-lg-12 grid-margin stretch-card">
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-
+              <a class="btn btn-sm btn-warning" style="color : white;" href="{% url 'view_offers' %}">Back</a>
                  <div class="table-responsive">
                 <table class="table">
                   <thead>
@@ -26,35 +36,42 @@
                      </tr>
                   </thead>
                   <tbody>
-                    {% for category in categories%}
-                    <tr>
-                      <td>{{forloop.counter}}</td>
-                      <td>{{category.name}}</td>
-                      <td style="color:{%if category.offer%}yellow{%else%}red{%endif%}">
-                        {%if category.offer%}
-                        {{category.offer }}
-                        {% else %}
-                        No Offers
-                        {% endif %}
-                    </td>
-                      <td><label class="badge badge-info"><a style="color : white;" href="{% url 'offers_for_category' category.id%}">+ Add &amp; edit</a></label>
-                      </td>
-                      {% if category.offer%}
-                      <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'remove_category_offer' category.id%}">Remove</a></label>
-                      </td>
-                      {% else %}
-                      <td>No offers</label>
-                      </td>
-                       {% endif %}
-            
-                </tr>
-                    {%endfor%}    
+                    {%if categories%}
+                        {% for category in categories%}
+                        <tr>
+                          <td>{{forloop.counter}}</td>
+                          <td>{{category.name}}</td>
+                          <td style="color:{%if category.offer%}yellow{%else%}red{%endif%}">
+                            {%if category.offer%}
+                            {{category.offer }}
+                            {% else %}
+                            No Offers
+                            {% endif %}
+                        </td>
+                          <td><a class="btn btn-sm btn-info" style="color : white;" href="{% url 'update_category_offer' category.id%}">+ Add &amp; edit</a>
+                          </td>
+                          {% if category.offer%}
+                          <td><a class="btn btn-sm btn-danger" style="color : white;" href="{% url 'remove_category_offer' category.id%}">Remove</a>
+                          </td>
+                          {% else %}
+                          <td>No offers</label>
+                          </td>
+                          {% endif %}
+                
+                    </tr>
+                        {%endfor%}   
+                    {%else%}
+                      <tr>
+                        <td colspan="5" class="text-center p-5">No categories found .</td>
+                      </tr>
+                    {%endif%} 
                    </tbody>
                 </table>
               </div>
             </div>
           </div>
         </div>
+          {% include 'pagination.html' with page_obj=categories%}
       </div>
      </div>
 

@@ -19,14 +19,20 @@
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Edit Brands</h4>
-                    <p class="card-description">Basic form layout</p>
                     <form class="forms-sample" method="POST" action="{% url 'update_brand' brand.id %}">
                         {% csrf_token %}
+                         <div class="form-group">
+                            {{ form.name.label_tag }}
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <p style="color: red;">{{ form.name.errors.0 }}</p>
+                            {% endif %}
+                        </div>
   
-                        <div class="form-group">
+                        {% comment %} <div class="form-group">
                             <label for="id_name">Brand name</label>
                             <input type="text" name="brand_name" value="{{brand.name}}" class="form-control" id="id_name" placeholder="Enter Brand name">
-                        </div>
+                        </div> {% endcomment %}
                         <button type="submit" class="btn btn-success mr-2">Save Changes</button>
                         <a href="{% url 'brand_management'%}" class="btn btn-dark">Cancel</a>
                     </form>

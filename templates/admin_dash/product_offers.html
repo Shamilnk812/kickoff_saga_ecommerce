@@ -6,15 +6,24 @@
 <div class="main-panel">
     <div class="content-wrapper">
       <div class="page-header">
-        <h4 class="card-title">OFFER &nbsp;MANAGEMENT</h4>
+        <h4 class="card-title">Product Offers</h4>
+        <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                  <li class="nav-item w-100">
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'view_product_offers' %}" method="get" >
+                      <input type="text" class="form-control" placeholder="Search product.." name="query" id="query" value="{{ query|default_if_none:'' }}">
+                      <button class="btn btn-primary" type="submit">Search</button>
+                    </form>
+                  </li>
+                </ol>
+              </nav>       
       </div>
       {% comment %} <div class="row"> {% endcomment %}
         <div class="col-lg-12 grid-margin stretch-card">
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-              {% comment %} <label class="badge badge-success"><a style="color : white;" href="{% url 'add_offer' %}">Add New Offer</a></label>
-              <label class="badge badge-success"><a style="color : white;" href="{% url 'add_offer' %}">Add New Offer</a></label> {% endcomment %}
+                <a class="btn btn-sm btn-warning" style="color : white;" href="{% url 'view_offers' %}">Back</a>
                  <div class="table-responsive">
                 <table class="table">
                   <thead>
@@ -30,34 +39,42 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {% for product in products%}
-                    <tr>
-                      <td>{{forloop.counter}}</td>
-                      <td>{{product.name}}</td>
-                      <td style="color:{%if product.offer%}yellow{%else%}red{%endif%}">
-                        {%if product.offer%}
-                        {{product.offer }}
-                        {% else %}
-                        No Offers
-                        {% endif %}
-                    </td>
-                      <td><label class="badge badge-info"><a style="color : white;" href="{% url 'offers_for_product' product.id%}">+ Add &amp; edit</a></label>
-                      </td>
-                      {% if product.offer%}
-                      <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'remove_product_offer' product.id%}">Remove</a></label>
-                      </td>
-                      {% else %}
-                      <td>No offers</label>
-                      </td>
-                       {% endif %}
-                </tr>
-                    {%endfor%}   
+                    {% if products%}
+                        {% for product in products%}
+                        <tr>
+                          <td>{{forloop.counter}}</td>
+                          <td>{{product.name}}</td>
+                          <td style="color:{%if product.offer%}yellow{%else%}red{%endif%}">
+                            {%if product.offer%}
+                            {{product.offer }}
+                            {% else %}
+                            No Offers
+                            {% endif %}
+                        </td>
+                          <td><a class="btn btn-sm btn-info" style="color : white;" href="{% url 'update_product_offer' product.id%}">+ Add &amp; edit</a>
+                          {% comment %} <td><a class="btn btn-sm btn-info" style="color : white;" href="{% url 'offers_for_product' product.id%}">+ Add &amp; edit</a> {% endcomment %}
+                          </td>
+                          {% if product.offer%}
+                          <td><a  class="btn btn-sm btn-danger" style="color : white;" href="{% url 'remove_product_offer' product.id%}">Remove</a>
+                          </td>
+                          {% else %}
+                          <td>No offers</label>
+                          </td>
+                          {% endif %}
+                        </tr>
+                        {%endfor%}   
+                      {%else%}
+                        <tr>
+                          <td colspan="5" class="text-center p-5">No product found .</td>
+                        </tr>
+                      {%endif%}
                    </tbody>
                 </table>
               </div>
             </div>
           </div>
         </div>
+         {% include 'pagination.html' with page_obj=products%}
       </div>
      </div>
 

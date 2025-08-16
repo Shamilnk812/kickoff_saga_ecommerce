@@ -16,14 +16,30 @@
                   <form class="forms-sample" method="POST" enctype="multipart/form-data">
                       {% csrf_token %}
 
+
                       <div class="form-group">
+                        {{ form.size.label_tag }}
+                        {{ form.size }}
+                        {% if form.size.errors %}
+                            <p style="color: red;">{{ form.size.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.quantity.label_tag }}
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}
+                            <p style="color: red;">{{ form.quantity.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                      {% comment %} <div class="form-group">
                           <label for="id_name">Size</label>
                           <input type="text" name="size" class="form-control" id="id_name" placeholder="Enter size">
                       </div>
                       <div class="form-group">
                           <label for="id_name">Quantity</label>
                           <input type="text" name="quantity" class="form-control" id="id_name" placeholder="Add quantity">
-                      </div>
+                      </div> {% endcomment %}
 
                      
                       <div class="form-group">
@@ -33,7 +49,7 @@
                       </div>
 
                       <button type="submit" class="btn btn-success mr-2">Add</button>
-                      <a href="#" class="btn btn-dark">Cancel</a>
+                      {% comment %} <a class="btn btn-dark" href="{% url 'show_variants' product.id %}">Cancel</a> {% endcomment %}
                   </form>
 
                

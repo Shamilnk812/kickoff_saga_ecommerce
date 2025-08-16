@@ -8,7 +8,7 @@
 <div class="main-panel">
     <div class="content-wrapper">
       <div class="page-header">
-        <h3 class="page-title">OFFER MANAGEMENT</h3>
+        <h3 class="page-title">Apply offer for product</h3>
         
       </div>
       
@@ -16,8 +16,6 @@
           <div class="card">
             <div class="card-body">
               <h4 class="card-title">Apply Offer</h4>
-              {% comment %} <p class="card-description"> Basic form layout </p> {% endcomment %}
-            
         
               <form class="forms-sample" action="{% url 'update_product_offer' product.id%}" method='POST'>
                 {% csrf_token %}
@@ -30,7 +28,7 @@
                     </div>
           
                    <button type="submit" class="btn btn-success mr-2">Apply</button>
-                   <button class="btn btn-dark"><a href="{% url 'viwe_product_offers'%}">Cancel</a></button>
+                   <a class="btn btn-dark" href="{% url 'view_product_offers'%}">Cancel</a>
               </form>
              
             </div>

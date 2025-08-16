@@ -15,21 +15,22 @@
                   <h4 class="card-title">Update {{variant.size}} size quantity</h4>
                   <form class="forms-sample" method="POST" enctype="multipart/form-data">
                       {% csrf_token %}
-                      
-                      
-
+                              
                       <div class="form-group">
-                          <label for="id_name">Quantity</label>
-                          <input type="text" name="quantity" class="form-control" id="id_name" placeholder="Add quantity" value="{{ variant.quantity }}">
-                      </div>
-
-                     
-                      <div class="form-group">
-                        {% for message in messages %}
-                            <p style="color:red;">{{ message }}</p>
-                        {% endfor %}
-                      </div>
-
+                        {{ form.size.label_tag }}
+                        {{ form.size }}
+                        {% if form.size.errors %}
+                            <p style="color: red;">{{ form.size.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        {{ form.quantity.label_tag }}
+                        {{ form.quantity }}
+                        {% if form.quantity.errors %}
+                            <p style="color: red;">{{ form.quantity.errors.0 }}</p>
+                        {% endif %}
+                    </div>
                       <button type="submit" class="btn btn-success mr-2">update</button>
                       <a href="{% url 'show_variants' variant.product.id %}" class="btn btn-dark">Cancel</a>
                   </form>

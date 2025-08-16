@@ -22,46 +22,30 @@
     <div class="page-content">
         <div class="checkout">
             <div class="container">
-                {% comment %} {% include "alert.html" %} {% endcomment %}
-                <div>
-                    {% if messages %}
-                        <div >
-                            {% for message in messages %}
-                                <span style="color: white; background: #c96; padding: 3px;"> * {{ message }}</span>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
                 <form id="razorpay-form" action="{% url 'place_order' %}" method="POST">
                     {% csrf_token %}
                     <div class="row">
                         <div class="col-lg-9">
                            
                             <h2 class="checkout-title">Billing Details</h2><!-- End .checkout-title -->
-                            {% comment %} {%for message in messages%}
-                            <h4 style="color: goldenrod">{{message}}</h4>
-                            {% endfor %} {% endcomment %}
-                           
-
                             
-                            {% if address%}
-                         <div class="form-group">
-                                <p>Default address:</p>
-                                {% comment %} {% for address in existing_addresses %} {% endcomment %}
-                                    <div class="address-box" style="border: 0.5px black solid; height: 200px; padding:10px;">
-                                        <label>
-                                            <input type="radio" id="address-radio-{{ address.id }}" name="address_id" value="{{ address.id }}" class="address-radio" checked ><br>
-                                            <span style="font-size: 18px; margin-left: 20px">{{ address.fname }}</span>
-                                            <span style="font-size: 18px; margin-left: 10px">{{ address.lname }}</span>, <br>
-                                            <span style="font-size: 18px; margin-left: 20px">{{ address.address }}</span>, <br>
-                                            <span style="font-size: 18px; margin-left: 20px">{{ address.city }}</span>, 
-                                            <span style="font-size: 18px; ">{{ address.state}}</span>, 
-                                            <span style="font-size: 18px; ">{{ address.country}}</span>, 
-                                            <span style="font-size: 18px; ">{{ address.pincode}}</span>
-                                        </label>
-                                    </div>
-                                {% comment %} {% endfor %} {% endcomment %}
-                            </div> 
+                        {% if addresses%}
+                          <div class="form-group">
+                                <p>Select an address:</p>
+                                <div class="address-list" style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                                    {% for address in addresses %}
+                                        <div class="address-box" style="border: 0.5px solid #ccc; padding:10px; margin-bottom: 8px; border-radius: 5px;">
+                                            <label>
+                                                <input type="radio" class="address-radio" name="address_id" value="{{ address.id }}" {% if forloop.first %}checked{% endif %}>
+                                                <strong>{{ address.fname }} {{ address.lname }}</strong><br>
+                                                {{ address.address }}, {{ address.city }}, {{ address.state }}<br>
+                                                {{ address.country }} - {{ address.pincode }}<br>
+                                                Phone: {{ address.phone }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
                             {% endif %}
 
                             <!-- Ship to Different Address Button -->
@@ -119,10 +103,10 @@
                                     <input type="email" name="email" class="form-control" >
                                 </div><!-- End .col-12 -->
 
-                                <div class="col-10">
+                                {% comment %} <div class="col-10">
                                     <label>Order notes (optional)</label>
                                     <textarea class="form-control" name="order_notes" cols="30" rows="4" placeholder="Notes about your order, e.g. special notes for delivery"></textarea>
-                                </div><!-- End .col-12 -->
+                                </div><!-- End .col-12 --> {% endcomment %}
                             </div>
 
                             <!-- Rest of the form fields -->
@@ -148,50 +132,57 @@
                                         <tr>
                                             <td><a href="#">{{ item.product.name|truncatechars:20}} </a>&nbsp;&nbsp;  x {{item.product_qty}}</td>
                                            
-                                            <td>${{item.total_cost | stringformat:'d'}}</td>
+                                            <td>₹{{item.total_cost | stringformat:'d'}}</td>
                                         </tr>
                                         {% endfor %}
+                                            <tr class="summary-subtotal">
+                                            <td>Subtotal:</td>
+                                            <td>₹{{sub_total | stringformat:'d'}}</td>
+                                        </tr><!-- End .summary-subtotal -->
 
-                                        {% if cart_items.0.coupon %}
+                                        {% if applied_coupon %}
                                         <tr class="summary-shipping">
                                             <td>Coupon applied :</td>
                                             <td>&nbsp;</td>
                                         </tr>
                                         <tr class="summary-shipping-row">
-                                                <td style="background:violet" class="text-center">{{ cart_items.0.coupon.coupon_code|upper }}</td>
-                                                <td><a href="{% url 'remove_coupon' cart_items.0.id %}"><i class="icon-close"></i></a></td>
+                                                <td style="background:violet" class="text-center">{{ applied_coupon|upper }} {{coupon_discount_percentage}}% OFF </td>
+                                                <td><a href="{% url 'remove_coupon' %}"><i class="icon-close"></i></a></td>
                                            </tr>
                                            <tr class="summary-shipping">
                                             <td>Coupon discount :&nbsp;</td>
-                                            <td>${{ cart_items.0.coupon.discound_amount}} </td>
+                                            <td>₹{{ coupon_discount|floatformat:0}} </td>
                                         </tr>
                                         {% endif %}
                                         {% if total_saved_amount > 0 %}
                                         <tr class="summary-shipping">
                                             <td>Saved Amount (Offers):</td>
-                                            <td>${{ total_saved_amount|stringformat:'d' }}</td>
+                                            <td>₹{{ total_saved_amount|stringformat:'d' }}</td>
                                         </tr><!-- End .summary-shipping -->
                                         {% endif %}
                                          
-                                        <tr class="summary-subtotal">
-                                            <td>Subtotal:</td>
-                                            <td>${{total_price | stringformat:'d'}}</td>
-                                        </tr><!-- End .summary-subtotal -->
-                                        <tr>
-                                            <td>Shipping:</td>
-                                            
-                                            <td>Free shipping</td>
-                                        </tr>
+                                    
+
+                                        {% if request.session.shipping_type %}
+                                            <tr>
+                                                <td>Shipping:</td>
+                                                <td>{{ request.session.shipping_type }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Shipping Cost:</td>
+                                                <td>₹{{ request.session.shipping_amount|stringformat:'d' }}</td>
+                                            </tr>
+                                        {% endif %}
                                        
                                         <tr class="summary-total">
                                             <td>Total:</td>
                                             <input type="hidden" value="{{total_price}}" name="total_price">
-                                            <td>${{ total_price | stringformat:'d'}}</td>
+                                            <td>₹{{ total_price | stringformat:'d'}}</td>
                                         </tr><!-- End .summary-total -->
                                       
                                     </tbody>
                                 </table><!-- End .table table-summary -->
-{% comment %} =================================================================================== {% endcomment %}
+
 
 
                            
@@ -199,8 +190,8 @@
                                 <button type="submit" class="btn  btn-success w-100 mt-2"> 
                                 {% comment %} <button type="submit" class="btn btn-outline-primary-2 btn-order btn-block">  {% endcomment %}
                                     <input type="hidden" value="COD" name="payment_mode">
-                                    <span class="btn-text">Place Order</span>
-                                    <span class="btn-hover-text">Proceed to Checkout</span>
+                                    <span class="btn-text">Cash on delivery</span>
+                                    <span class="btn-hover-text">Place order</span>
                                 </button>
                                 {% comment %} <button type="button" class="btn btn-success payWithRazorpay w-100 mt-2">Pay with Razorpay</button> {% endcomment %}
                                 <button type="button" class="btn btn-success payWithRazorpay w-100 mt-2" onclick="submitRazorpayForm()">Pay with Razorpay</button>
@@ -215,10 +206,23 @@
     </div><!-- End .page-content -->
 </main><!-- End .main -->
 
-{% comment %} <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script> {% endcomment %}
 
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% if messages %}
+  <script>
+    {% for message in messages %}
+      Swal.fire({
+        icon: `{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}`,
+        title: '{{ message.tags|capfirst }}',
+        text: '{{ message|escapejs }}',
+      });
+    {% endfor %}
+  </script>
+{% endif %}
+
+
+
  <script>
     document.addEventListener("DOMContentLoaded", function () {
         const shipToDifferentAddressButton = document.getElementById("ship-to-different-address");
@@ -237,14 +241,8 @@
         walletButton.addEventListener("click", payWithWallet);
     });
 
-    {% comment %}   PAY WITH WALLET {% endcomment %}
+  
     function payWithWallet() {
-        // Implement AJAX to check wallet balance and process payment
-        // Send a request to a Django view to check the wallet balance
-        // If balance is sufficient, proceed with placing the order
-        // Update the payment_mode to "paid by wallet" in the form
-
-        // Example using jQuery for AJAX (make sure to include jQuery in your project)
         $.ajax({
             url: '{% url "check_wallet_balance" %}',
             method: 'GET',
@@ -252,15 +250,12 @@
                 if (response.success) {
                     // Wallet balance is sufficient, update the form and submit
                     $('input[name="payment_mode"]').val('paid by wallet');
-                    $('#razorpay-form').submit();  // Assuming your form has an ID 'razorpay-form'
+                    $('#razorpay-form').submit();  
                 } else {
-                    // Wallet balance is not sufficient, display an alert or handle accordingly
                     alert('Wallet balance is not sufficient.');
                 }
             },
             error: function() {
-                // Handle errors
-              
                 Swal.fire({
                     icon: 'error',
                     title: 'Insufficient Balance.',

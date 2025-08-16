@@ -93,10 +93,12 @@
                     <div class="header-right">
                         <div class="header-search">
                             <a href="#" class="search-toggle" role="button" title="Search"><i class="icon-search"></i></a>
-                            <form action="{% url 'search_products' %}" method="get">
+                            <form action="{% url 'store' %}" method="get">
                                 <div class="header-search-wrapper">
                                     <label for="q" class="sr-only">Search</label>
-                                    <input type="search" class="form-control" name="query" id="query" placeholder="Search in..." required>
+                                    {% comment %} <input type="search" class="form-control" name="query" id="query" placeholder="Search in..." required> {% endcomment %}
+                                    <input type="search" class="form-control" name="query" id="query" placeholder="Search in..." value="{{ request.GET.query }}" required>
+
                                     <button class="btn btn-primary" type="submit"><i class="icon-search"></i></button>
 
                                 </div><!-- End .header-search-wrapper -->

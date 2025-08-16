@@ -36,7 +36,7 @@ $(document).ready(function () {
                 Swal.fire({
                     icon: 'error',
                     title: 'Add new address',
-                    text: 'Please Enter your address',
+                    text: 'Please Enter your address. Fields cannot be empty!',
                 });
                 return false;
             }
@@ -85,11 +85,24 @@ $(document).ready(function () {
                 return false;
             }
             
-            if (formData['phone'] <= 0 || formData['phone'].length !== 10 || !/^\d+$/.test(formData['phone'])) {
+            // if (formData['phone'] <= 0 || formData['phone'].length !== 10 || !/^\d+$/.test(formData['phone'])) {
+            //     Swal.fire({
+            //         icon: 'error',
+            //         title: 'Invalid Phone Number',
+            //         text: 'Please enter a valid 10-digit numeric phone number.',
+            //     });
+            //     return false;
+            // }
+
+            if (
+                formData['phone'].length !== 10 ||
+                !/^[6-9]\d{9}$/.test(formData['phone']) ||
+                ['0000000000', '1111111111', '2222222222'].includes(formData['phone'])
+            ) {
                 Swal.fire({
                     icon: 'error',
                     title: 'Invalid Phone Number',
-                    text: 'Please enter a valid 10-digit numeric phone number.',
+                    text: 'Please enter a valid 10-digit mobile number',
                 });
                 return false;
             }

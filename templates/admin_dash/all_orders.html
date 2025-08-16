@@ -6,83 +6,87 @@
     <div class="content-wrapper">
        {% include "alert.html" %}
       <div class="page-header">
-        {% comment %} <h3 class="page-title"> Basic Tables </h3> {% endcomment %}
-        <h4 class="card-title">All Orders</h4>
       
-        <nav aria-label="breadcrumb">
-          <ol class="breadcrumb">
-            {% comment %} <li class="breadcrumb-item"><a href="#">Tables</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Basic tables</li> {% endcomment %}
-          </ol>
-        </nav>
+        <h4 class="card-title">All Orders</h4>
+           <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                  <li class="nav-item w-100">
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'all_orders' %}" method="get" >
+                      <input type="text" class="form-control" placeholder="Search order" name="query" id="query" value="{{ query|default_if_none:'' }}">
+                      <button class="btn btn-primary" type="submit">Search</button>
+                    </form>
+                  </li>
+                </ol>
+              </nav>
       </div> 
-      {% if all_orders%}
-      {% comment %} <div class="row"> {% endcomment %}
+      {% comment %} {% if all_orders%} {% endcomment %}
         <div class="col-lg-12 grid-margin stretch-card">
           <div class="card">
             <div class="card-body">
+              <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'view_all_order_items' %}">View Order Items</a>
               <div class="table-responsive">
                 <table class="table">
                   <thead>
                     <tr>
                       <th>Id</th>
                       <th>Tracking ID</th>
+                      <th>User</th>
                       <th>Date</th>
+                      <th>Items</th>
                       <th>Total</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                      <th>Cancel</th>
+                      <th>View Details</th>
+                    
                     </tr>
                   </thead>
                   <tbody>
+                {% if all_orders%}
                   {% for order in all_orders %}
                     <tr>
                       <td>{{forloop.counter}}</td>
-                      <td>{{order.tracking_no}}</td>
+                      <td class="text-secondary">{{order.tracking_no}}</td>
+                      <td>{{order.fname}} {{order.lname}}</td>
                       <td>{{order.created_at}}</td>
-                      <td>{{order.total_price | stringformat:'d'}}</td>
-                      <td style="color:green">{{order.status}}</td>
-                      <td ><label class="badge badge-info"><a style="color : white;" href="{% url 'view_single_order' order.tracking_no %}"> View </a></label>
-                        {% if order.status == 'Cancel' %}
-                          Order Canceled
-                      {% elif order.status == 'Deliverd'%}
-                          Order Deliverd
-                        {% else %}
-                          <label class="badge badge-warning"><a style="color : white;" href="{% url 'edit_order_status' order.tracking_no %}"> Edit </a></label>
-                      {% endif %}
+                      <td>{{order.orderitem_set.count}}</td>
+                      <td>₹{{order.total_price | stringformat:'d'}}</td>
+                      <td >
+                         <a href="{% url 'view_single_order' order.id %}" class="btn bg-primary text-white">View 
+                           {% if order.id in orders_with_return %}
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                          {% endif %}
+                         </a>
                       </td>
-                      {% comment %} <td> <label class="badge badge-danger"><a style="color : white;" href="{% url 'delete_order_admin' order.tracking_no %}"> Cancel </a></label></td> {% endcomment %}
-                      <td>
-                        {% if order.status == 'Cancel' %}
-                        <span style="color: red;">Canceled</span>
-                    {% elif order.status == 'Deliverd'%}
-                    <span style="color: green;">Deliverd</span>
-                    {% else %}
-                        <button class="badge badge-danger"
-                            onclick="showCancelConfirmation('{{ order.tracking_no }}')">Cancel</button>
-                    {% endif %}
-                        {% comment %} <button class="badge badge-danger" onclick="showCancelConfirmation('{{ order.tracking_no }}')">Cancel</button> {% endcomment %}
-                      </td>
-                </tr>
-                    {%endfor%}  
-                    
-                   
-                    
+                   </tr>
+                    {%endfor%}   
+                    {%else%} 
+                     <tr>
+                    <td colspan="7" class="text-center text-muted" style="padding: 80px 0;">
+                      <h5>No orders found.</h5>
+                      <p>There are currently no orders to display.</p>
+                    </td>
+                  </tr>
+                    {%endif%}                  
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
         </div>
-        {% else %}
-        <h3 style="color:red">No orders !!!</h3>
-        {% endif %}
+          {% include 'pagination.html' with page_obj=all_orders%}
       </div>
      </div>
 
   </div>
   </div>
-  {% comment %} <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11"> {% endcomment %}
+  
+
+
+
+
+
+
+
+
+{% comment %} 
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script>
@@ -101,6 +105,6 @@
         }
       });
     }
-  </script>
+  </script> {% endcomment %}
   
 {% endblock content %}

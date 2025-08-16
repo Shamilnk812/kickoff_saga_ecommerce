@@ -6,90 +6,99 @@
 
 <div class="main-panel">
     <div class="content-wrapper">
-      <div class="page-header">
-        {% comment %} <h3 class="page-title"> Basic Tables </h3> {% endcomment %}
-        <label class="badge badge-success"><a style="color : white;" href="{% url 'add_product' %}">Add New Product
-      </a></label>
+       <div class="page-header">
+        <h4 class="card-title">Product Management</h4>
+         <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                  <li class="nav-item w-100">
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'product_management' %}" method="get" >
+                      <input type="text" class="form-control" placeholder="Search category" name="query" id="query" value="{{ query|default_if_none:'' }}">
+                      <button class="btn btn-primary" type="submit">Search</button>
+                    </form>
+                  </li>
+                </ol>
+              </nav>
       </div>
-      {% comment %} <div class="row"> {% endcomment %}
+
         <div class="col-lg-12 grid-margin stretch-card">
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-              <h4 class="card-title text-center p-3">Product Management</h4>
-              {% comment %} <p class="card-description"> Add class <code>.table</code> {% endcomment %}
-              </p>
+               <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_product' %}">Add New Product</a>
+             
               <div class="table-responsive">
                 <table class="table">
                   <thead>
                     <tr>
-                      <th>ID</th>
-                      <th>NAME</th>
-                      <th>CATEGORY</th>
-                      <th>PRICE</th>
+                      <th>Id</th>
+                      <th>Name</th>
+                      <th>Category</th>
+                      <th>Price</th>
                       <th>Offer</th>
-                      <th>VARIANTS</th>
-                      <th>ACTIONS</th>
+                      <th>Status</th>
+                      <th>Variants</th>
+                      <th>Visibility</th>
+                      <th>Actions</th>
                       
                     </tr>
                   </thead>
                   <tbody>
+                {%if all_products%}
                   {% for product in all_products%}
                     <tr>
                       <td>{{forloop.counter}}</td>
                       <td>{{product.name}}</td>
                       <td>{{product.categories}}</td>
-                      <td>{{product.price| stringformat:'d'}}</td>
+                      <td>₹{{product.price| stringformat:'d'}}</td>
                      
-                        {% if product.offer %}
-                        <td >Offer Available</td>
-                        {% else %}
-                        <td>No Offer</td>
-                        {% endif %}
+                      {% if product.offer %}
+                        <td class="text-warning">{{product.offer.title|capfirst}}</td>
+                      {% else %}
+                        <td >No Offer</td>
+                      {% endif %}
+                      
+                      <td style=" color: {%if product.is_available%} green {%else%} red {%endif%}">
+                        {%if product.is_available%}
+                          Active
+                        {%else%}
+                          Inactive
+                        {%endif%}
+                      </td>
                     
-                      <td><label class="badge badge-info"><a style="color : white;" href="{% url 'show_variants' product.id %}"> View </a></label></td> 
-                      {% comment %} <td><label class="badge badge-warning"><a style="color : white;" href="{% url 'edit_product' product.id %}"> Edit </a></label> 
-                        {% if product.is_available %}
-                        <label class="badge badge-warning"><a style="color : white;" href="{% url 'product_delete' product.id %}"> Delete </a></label>
-                        {% else %}
-                        <label class="badge badge-success"><a style="color : white;" href="{% url 'product_delete' product.id %}"> Add </a></label>
-                        {% endif %}
-                          </td>  {% endcomment %}
+                      <td>
+                        <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'show_variants' product.id %}"> View </a>
+                      </td> 
+                      
+                      <td>
+                        {%if product.status == 'draft'%}
+                            <a class="btn btn-sm btn-primary" style="color : white;" href="{% url 'publish_product' product.id%}">Publish
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                            </a>
+                        {%else%}
+                          <span class="text-secondary">Published</span>
+                        {%endif%}
+          
+
+                      </td>
                           <td>
-                            <label class="badge badge-warning">
-                              <a style="color: white;" href="{% url 'edit_product' product.id %}"> Edit </a>
-                            </label>
+                              <a class="btn btn-sm btn-warning" style="color: white;" href="{% url 'update_product' product.id %}"> Edit </a>
                             {% if product.is_available %}
-                            <label class="badge badge-danger">
-                              <a style="color: white;" href="{% url 'product_delete' product.id %}"> Block</a>
-                            </label>
-                                
+                                <a  class="block-product btn btn-sm btn-danger"  style="color: white;" data-url="{% url 'product_delete' product.id %}"> Block</a>
                                 {% else %}
-                                <label class="badge badge-success">
-                                  <a style="color: white;" href="{% url 'product_delete' product.id %}"> Unblock</a>
-                                </label>
+                                  <a class="unblock-product btn btn-sm btn-success" style="color: white;" data-url="{% url 'product_delete' product.id %}"> Unblock</a>
                                   
                                 {% endif %}
                               
                            
                           </td>
-                          
-                       
-                   
-                      {% comment %} <td><label class="badge badge-danger"><a style="color : white;" href="{% url 'category_delete' category.id%}"> Delete </a></label></td> {% endcomment %}
-                      
-                      
-                      
-                 
-                     
-                      
-                    
-                    
 
                     </tr>
                     {%endfor%}  
-                    
-                   
+                    {%else%}
+                      <tr>
+                        <td colspan="9" class="text-center p-5">No products found.</td>
+                      </tr>
+                    {%endif%}
                     
                   </tbody>
                 </table>
@@ -97,12 +106,55 @@
             </div>
           </div>
         </div>
+         {% include 'pagination.html' with page_obj=all_products%}
       </div>
      </div>
 
   </div>
   </div>
 
-  
+
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const productToggleLinks = document.querySelectorAll(".block-product, .unblock-product");
+
+    productToggleLinks.forEach(function (link) {
+        link.addEventListener("click", function (event) {
+            event.preventDefault();
+
+            const productToggleUrl = link.getAttribute("data-url");
+            const isBlockAction = link.classList.contains("block-product");
+
+            if (isBlockAction) {
+                swal({
+                    title: "Are you sure?",
+                    text: "Do you want to block this product?",
+                    icon: "warning",
+                    buttons: ["Cancel", "Yes, block it"],
+                    dangerMode: true,
+                }).then((confirmed) => {
+                    if (confirmed) {
+                        window.location.href = productToggleUrl;
+                    }
+                });
+            } else {
+                swal({
+                    title: "Are you sure?",
+                    text: "Do you want to unblock this product?",
+                    icon: "info",
+                    buttons: ["Cancel", "Yes, unblock it"],
+                }).then((confirmed) => {
+                    if (confirmed) {
+                        window.location.href = productToggleUrl;
+                    }
+                });
+            }
+        });
+    });
+});
+</script>
+
 
 {% endblock content %}

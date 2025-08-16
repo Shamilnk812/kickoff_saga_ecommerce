@@ -12,7 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
 from django.urls import reverse
 from django.db import transaction
-from django.db.models import Sum,Count,F
+from django.db.models import Sum,Count,F, Q
 from django.utils import timezone
 from datetime import timedelta,datetime
 from django.core.exceptions import ValidationError
@@ -20,16 +20,20 @@ from django.http import HttpResponse
 from .helpers import render_to_pdf
 from django.db.models.functions import TruncMonth,TruncDay
 from PIL import Image, ImageFilter
+from .constants import ORDER_STATUS_FLOW as STATUS_FLOW
+from cart.utils import create_payment
 # from PIL import Image
 # from io import BytesIO
 # from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.http import JsonResponse
+from django.core.paginator import Paginator
+from .utils import *
 
 
 
 
 
-# -------------- Admin auth --------------
+# ------------- Admin auth --------------
 
 def admin_log_in(request) :
     if request.method == 'POST' :
@@ -71,12 +75,23 @@ def admin_logout(request) :
 
 @login_required(login_url='admin_log_in')
 def user_management(request) :
-    all_users = User.objects.filter(is_superuser=False)
+    query = request.GET.get('query')
+
+    if query:
+        users = User.objects.filter(
+            Q(username__icontains=query) | Q(email__icontains=query),
+            is_superuser=False
+            ).order_by('-id')
+    else:
+        users = User.objects.filter(is_superuser=False).order_by('-id')
+   
+    paginate_query = paginate_queryset(users, request, 8)
+    
     context = {
-        'all_users':all_users
+        'all_users': paginate_query,
+        'query': query,
     }
     return render(request, 'admin_dash/usermanage.html',context)
-
 
 def search_user(request) :
     query = request.GET.get('query')
@@ -85,16 +100,51 @@ def search_user(request) :
 
 
 @login_required(login_url='admin_log_in')
-def block_unblock_user(request, user_id):
-    user = User.objects.get(id=user_id)
-    user.is_active = not user.is_active  
+def block_user(request, user_id):
+    blocking_reason = request.POST.get('blocking_reason', '').strip()
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.warning('User data doesnot exist')
+        return redirect('user_management')
+    
+    if not blocking_reason:
+            messages.warning(request, "Blocking reason is required.")
+            return redirect('user_management')
+    if len(blocking_reason) < 10:
+            messages.warning(request, "Blocking reason must be at least 10 characters. Please enter valid reason.")
+            return redirect('user_management')
+    if blocking_reason.isdigit() or re.fullmatch(r'[^\w\s]+', blocking_reason):
+            messages.warning(request, "Blocking reason must contain valid text, not just digits or special characters.")
+            return redirect('user_management')
+     
+    user.is_active = False
     user.save()
-    if user.is_active:
-        messages.success(request, f"User '{user.username}' is now available.")
-    else:
-        messages.warning(request, f"User '{user.username}' is now blocked.")
+    # Send account block email
+    send_block_email(user.email, user.username, blocking_reason)
+    messages.success(request, f'{user.username} Account is blocked successfully')
     return redirect('user_management')
-   
+
+
+
+@login_required(login_url='admin_log_in')
+def unblock_user(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        messages.warning('User data doesnot exist')
+        return redirect('user_management')
+    
+    user.is_active = True
+    user.save()
+
+    # send account unblok email 
+    send_account_unblock_email(user.email, user.username)
+
+    messages.success(request, f'{user.username} Account is unblocked')
+    return redirect('user_management')
+
 
 
 
@@ -102,9 +152,17 @@ def block_unblock_user(request, user_id):
 
 @login_required(login_url='admin_log_in')
 def category_management(request) :
-    all_category = Category.objects.all().order_by('-id')
+    query = request.GET.get('query')
+    if query:     
+        all_category = Category.objects.filter(name__icontains=query).order_by('-id')
+    else:
+        all_category = Category.objects.all().order_by('-id')
+
+    paginate_query = paginate_queryset(all_category, request, 8)
+
     context = {
-        'all_category':all_category
+        'all_category':paginate_query,
+        'query':query,
     }
     return render(request, 'admin_dash/category_manage.html',context)   
 
@@ -115,27 +173,31 @@ def add_category(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
         if form.is_valid():
-            name = form.cleaned_data['name']
-            description = form.cleaned_data['description']
-            
-            if Category.objects.filter(name=name).exists():
-                form.add_error('name', 'Category with this name already exists')
-
-            if name.isdigit():
-                form.add_error('name', 'Enter a valid name')
-
-            if description.isdigit():
-                form.add_error('description', 'Enter a valid description')
-
-            if not form.errors:
-                form.save()
-                messages.success(request, "Category added successfully ")
-                return redirect(category_management)
-                   
+            form.save()
+            messages.success(request, "Category added successfully ")
+            return redirect(category_management)
     else:
         form = CategoryForm()
 
     return render(request, 'admin_dash/add_category.html', {'form': form})
+
+
+
+@login_required(login_url='admin_log_in')
+def update_category(request,category_id):
+    category = get_object_or_404(Category, id=category_id)
+
+    if request.method == 'POST' :
+        form = CategoryForm(request.POST,instance=category)
+        if form.is_valid() :
+            category_name = form.cleaned_data['name']
+            form.save()
+            messages.success(request, f'{category_name} Category updated successfully')
+            return redirect('category_management')
+    else :
+        form =   CategoryForm(instance=category)
+        
+    return render(request, 'admin_dash/edit_category.html',{'form':form,'category': category})
 
 
 
@@ -145,56 +207,29 @@ def category_delete(request, category_id) :
     category.is_available = not category.is_available
     category.save()
     if category.is_available :
-      messages.success(request, 'Category is blocked')
-      return redirect(category_management)
+        messages.info(request, f'{category.name} Category is unblocked')
+        return redirect(category_management)
     else :
-      messages.info(request, 'Category is unblocked')
-      return redirect(category_management)
-  
-
-
-@login_required(login_url='admin_log_in')
-def edit_category(request,category_id) :
+        messages.success(request, f'{category.name} Category is blocked')
+        return redirect(category_management)
     
-    category = get_object_or_404(Category, id=category_id)
-    form = CategoryForm(instance=category)
-    return render(request, 'admin_dash/edit_category.html',{'form':form,'category': category})
 
 
 
-@login_required(login_url='admin_log_in')
-def update_category(request,category_id):
-    if request.method == 'POST' :
-        category = get_object_or_404(Category,id=category_id)
-        form = CategoryForm(request.POST,instance=category)
-        if form.is_valid() :
-            name = form.cleaned_data['name']
-            description = form.cleaned_data['description']
-            if Category.objects.filter(name=name).exclude(id=category_id).exists() :
-                form.add_error('name', 'Category with this name already exists !')
-            if name.isdigit() :
-                form.add_error('name', "Enter a valid name")
-            if description.isdigit() :
-                form.add_error('description', "Enter a valid description")
-            if not form.errors :    
-                form.save()
-                messages.success(request, 'Category updated successfully')
-                return redirect('category_management')
-    else :
-        form = CategoryForm(instance=category)   
-        
-    return render(request, 'admin_dash/edit_category.html',{'form':form,'category': category})
-
-
-
-
-# ----------------------  Brand Management ------------------
+# --------------- Brand Management ---------------
 
 @login_required(login_url='admin_log_in')
 def brand_management(request) :
-    all_brands = Brand.objects.all().order_by('-id')
+    query = request.GET.get('query')
+    if query:
+        all_brands = Brand.objects.filter(name__icontains=query).order_by('-id')
+    else:
+        all_brands = Brand.objects.all().order_by('-id')
+    
+    paginate_query = paginate_queryset(all_brands, request, 8)
     context = {
-        'all_brands':all_brands
+        'all_brands':paginate_query,
+        'query':query
     }
     return render(request, 'admin_dash/brand_management.html',context)
 
@@ -202,81 +237,66 @@ def brand_management(request) :
 @login_required(login_url='admin_log_in')
 def add_brand(request) :
     if request.method == 'POST' :
-        brand_name = request.POST.get('brand_name')
-        if brand_name.strip() == '' :
-            messages.warning(request, 'Field cannot be empty!')
-            return redirect('add_brand')
-        if Brand.objects.filter(name=brand_name).exists() :
-            messages.warning(request, 'This Brand already exists!')
-            return redirect('add_brand')
-        if brand_name.isdigit() :
-            messages.warning(request, 'Enter a valid Brand name')
-            return redirect('add_brand')
-        else :
-            brand  = Brand(name=brand_name)
-            brand.save()
-            messages.success(request, 'Brand successfully added ')
+        form = BrandForm(request.POST)
+        if form.is_valid():
+            form.save()
+            brand_name = form.cleaned_data['name']
+            messages.success(request, f'{brand_name} new brand succcessfully added')
             return redirect('brand_management')
-    return render(request, 'admin_dash/add_brand.html')
+    else:
+        form = BrandForm()
 
+    return render(request, 'admin_dash/add_brand.html', {'form':form})
 
-@login_required(login_url='admin_log_in')
-def edit_brand(request, brand_id) :
-    brand = get_object_or_404(Brand, id=brand_id)
-    context = {
-        'brand':brand
-       }
-    return render(request, 'admin_dash/edit_brand.html',context) 
 
 
 @login_required(login_url='admin_log_in')
 def update_brand(request, brand_id) :
+    brand = get_object_or_404(Brand, id=brand_id)
+
     if request.method == 'POST' :
-        brand_name = request.POST.get('brand_name')
-        if brand_name.strip() == '' :
-            messages.error(request, 'Field cannot be empty!')
-            return redirect('edit_brand', brand_id=brand_id)
-        existing_brand = Brand.objects.filter(name=brand_name).exclude(id=brand_id)
-        if existing_brand.exists() :
-            messages.error(request, 'This Brand already exists !')
-            return redirect('edit_brand', brand_id=brand_id)
-        if brand_name.isdigit() :
-            messages.error(request, 'Enter a valid Brand name')
-            return redirect('edit_brand', brand_id=brand_id)
-
-        else :
-
-            new_brand = get_object_or_404(Brand, id=brand_id)
-            new_brand.name = brand_name
-            new_brand.save()
-            messages.success(request, 'Brand name updated !')
+        form = BrandForm(request.POST,instance=brand)
+        if form.is_valid():
+            form.save()
+            brand_name = form.cleaned_data['name']
+            messages.success(request, f'{brand_name} is updated successfully.')
             return redirect('brand_management')
+    else:
+        form = BrandForm(instance=brand)
 
-    return render(request, 'admin_dash/edit_brand.html')
+    return render(request, 'admin_dash/edit_brand.html', {'form':form, 'brand':brand})
 
 
 
 @login_required(login_url='admin_log_in')
 def delete_brand(request,brand_id):
     brand = get_object_or_404(Brand, id=brand_id)
-    brand.is_block = not brand.is_block
+    brand.is_available = not brand.is_available
     brand.save()
-    if brand.is_block :
-        messages.warning(request, " Barnd is blocked ")
+    if brand.is_available :
+        messages.success(request, f"{brand.name} brand is available")
         return redirect(brand_management)
-        
     else :
-        messages.success(request, "Brand is available")
+        messages.warning(request, f"{brand.name} Barnd is blocked ")
         return redirect(brand_management)
     
 
 
-# ------------------- Product Management --------------------
+# --------------- Product Management ---------------
 
 @login_required(login_url='admin_log_in')
 def product_management(request) :
-    all_products = Product.objects.all().order_by('-id')
-    context = { 'all_products':all_products}
+    query = request.GET.get('query')
+    if query:
+        all_products = Product.objects.filter(name__icontains=query).order_by('-id')
+    else:
+        all_products = Product.objects.all().order_by('-id')
+
+    paginate_query = paginate_queryset(all_products, request, 10)
+    context = { 
+        'all_products': paginate_query,
+        'query':query
+        }
     return render(request, 'admin_dash/product_management.html',context)
 
 
@@ -285,90 +305,27 @@ def add_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)  
         if form.is_valid():
-            name = form.cleaned_data['name']
-            price = form.cleaned_data['price']
-            
-            if Product.objects.filter(name=name).exists() :
-                form.add_error('name', 'Product with this name already exists.')
-            if name.isdigit():
-                form.add_error('name', 'Enter a valid product name.')
-            
-            try:
-                float(price)
-                if price < 0 :
-                    form.add_error('price', 'Enter a positive number')
-            except ValueError:
-                form.add_error('price', 'Price must be a valid number.')
-
-            if not form.errors:
-                form.save()
-                messages.success(request, "New product added successfully.")
-                return redirect('product_management')
-
+            product_name = form.cleaned_data['name']
+            form.save()
+            messages.success(request, f"{product_name} New product added successfully.")
+            return redirect('product_management')
     else:
         form = ProductForm()  
 
-    all_categories = Category.objects.all()
-    brands = Brand.objects.all()
-    offers = Offer.objects.filter(is_valid=True)
-    context = {
-        'all_categories': all_categories,
-        'brands': brands,
-        'form': form, 
-        'offers': offers,
-    }
-
-    return render(request, 'admin_dash/add_product.html', context) 
-
-
-
-
-@login_required(login_url='admin_log_in')
-def edit_product(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    form = ProductForm(instance=product)
-    all_categories = Category.objects.all()
-    brands = Brand.objects.all()
-    offers = Offer.objects.filter(is_valid=True)
-    
-
-    context = {
-        'form': form,
-        'product': product,
-        'all_categories': all_categories,
-        'brands': brands,
-        'offers': offers
-    }
-
-    return render(request, 'admin_dash/edit_product.html', context)
-
+    return render(request, 'admin_dash/add_product.html', {'form': form}) 
 
 
 @login_required(login_url='admin_log_in')
 def update_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
+
     if request.method == 'POST':
         form = ProductForm(request.POST, instance=product)
         if form.is_valid():
-            name = form.cleaned_data['name']
-            if Product.objects.filter(name=name).exclude(id=product_id).exists() :
-                form.add_error('name', 'Product With this name already exists !')
-            if name.isdigit():
-                form.add_error('name', 'Enter a valid product name.') 
-            price = form.cleaned_data['price']    
-            try :
-                float(price) 
-                if price < 0 :
-                    form.add_error('price', 'Enter a Positive price')  
-            except ValueError :
-                form.add_error('price', 'Enter a valid number') 
-             
-            if not form.errors:
-                form.save()            
-                messages.success(request, 'Product updated successfully.')
-                return redirect('product_management')
-        else:
-            messages.error(request, 'Form is not valid. Please check the errors below.')
+            product_name = form.cleaned_data['name']
+            form.save()            
+            messages.success(request, f'{product_name} product is updated successfully.')
+            return redirect('product_management')
     else:
         form = ProductForm(instance=product)
 
@@ -383,46 +340,74 @@ def product_delete(request, product_id):
     product.is_available = not product.is_available  
     product.save()
     if product.is_available :
-        messages.success(request, 'Product is available')
+        messages.success(request, f'{product.name} Product is available')
         return redirect('product_management')
     else :
-        messages.warning(request, 'product is blocked')
+        messages.warning(request, f'{product.name} product is blocked')
         return redirect('product_management')
 
 
-#  ------------------- Product variants --------------------
+
+@login_required(login_url='admin_log_in')
+def publish_products(request, product_id):
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        messages.warning(request, 'product is not found')
+        return redirect('product_management')
+    
+    if product.status == 'published':
+        messages.warning(request, f'{product.name} is already published.')
+        return redirect('product_management')
+    
+    if not Variants.objects.filter(product=product).exists():
+        messages.warning(request, 'Please add product variant before publishing.')
+        return redirect('product_management')
+        
+    if not Images.objects.filter(product=product).exists():
+        messages.warning(request, 'Please add product photos before publishing.')
+        return redirect('product_management')
+    
+    product.status = 'published'
+    product.save()
+    
+    messages.success(request, f'{product.name} has been successfully published.')
+    return redirect('product_management')
+    
+
+
+#  ---------------- Product variants ------------------
 
 @login_required(login_url='admin_log_in')
 def show_variants(request, product_id):
-    products = Product.objects.filter(id=product_id)
-    product_id= product_id
-    image = Images.objects.filter(product=product_id)
-    variants = Variants.objects.filter(product=product_id)
-   
-    return render(request, 'admin_dash/variants_product.html', {'products': products,'product_id':product_id,'image':image,'variants':variants})
+    product = get_object_or_404(Product, id=product_id)
+    image = Images.objects.filter(product=product)
+    variants = Variants.objects.filter(product=product)
+
+    context = {
+        'product':product,
+        'image':image,
+        'variants':variants
+    }
+    return render(request, 'admin_dash/variants_product.html', context)
 
 
-# ------------------- Upload product image with fixed size --------------------
-
+# ----------- Upload product image with fixed size -----
 @login_required(login_url='admin_log_in')
 def add_image_product(request, product_id):
-    product = Product.objects.get(id=product_id)
+    product = get_object_or_404(Product, id=product_id)
 
     if request.method == 'POST':
         form = ImageForm(request.POST, request.FILES)
         if form.is_valid():
             # Open the uploaded image
             uploaded_image = Image.open(form.cleaned_data['image'])
-
             # Resize the image
             resized_image = uploaded_image.resize((600, 700), Image.BICUBIC)
-
             # Convert the image to RGB (uncomment the line below if needed)
             resized_image = resized_image.convert('RGB')
-
             # Create an in-memory buffer to store the resized image
             buffer = io.BytesIO()
-
             # Save the resized image to the buffer
             resized_image.save(buffer, format='JPEG')  # You can change the format if needed
 
@@ -432,8 +417,6 @@ def add_image_product(request, product_id):
 
             # Save the resized image to the 'image' field
             image.image.save('resize.jpg', buffer, save=False)
-
-            # Save the Image instance
             image.save()
 
             messages.success(request, 'Product Image added successfully')
@@ -445,151 +428,434 @@ def add_image_product(request, product_id):
     return render(request, 'admin_dash/add_image_product.html', {'form': form, 'product': product})
 
 
-
 @login_required(login_url='admin_log_in')
-def delete_product_image(request,img_id) :
-    image = Images.objects.get(id=img_id)
+def delete_product_image(request,img_id, product_id) :
+    image = get_object_or_404(Images, id=img_id, product=product_id)
     image.delete()
-    messages.info(request, 'Product Image Removed')
-    product_id = image.product.id
-    return redirect(reverse('show_variants', args=[product_id]))
+    messages.success(request, 'Product Image Removed')
+    return redirect('show_variants', product_id=product_id)
 
 
-#--------------------- Add product variants -------------------
+#-----------Add product size variants ----------
+
 @login_required(login_url='admin_log_in')
 def add_size_and_quantity(request, product_id) :
-    if request.method == 'POST' :
-        size = request.POST.get('size')
-        quantity = request.POST.get('quantity')
-        product = Product.objects.get(id=product_id)
-        if not size.isdigit() or int(size) < 0 or int(size) > 16 :
-            messages.warning(request, 'Enter a valid size')
-            return redirect('add_size_and_quantity', product_id=product_id)
-        
-        if not quantity.isdigit() or int(quantity) < 0 or int(size) > 500 :
-            messages.warning(request, 'Enter a valid quantity')
-            return redirect('add_size_and_quantity', product_id=product_id)
+    product = get_object_or_404(Product, id=product_id)
 
-        if Variants.objects.filter(product=product, size=size).exists():
-            messages.warning(request, f'A variant with size {size} already exists for this product.')
-            return redirect('add_size_and_quantity', product_id=product_id)
-        
-        
-        variant = Variants.objects.create(product=product,size=size,quantity=quantity)
-        variant.save()
-        messages.success(request, 'Product size & quantity updated')
-        return redirect('show_variants',product_id=product_id)
-    return render(request, 'admin_dash/add_size_quantity.html')
+    if request.method == 'POST' :
+        form = ProductSizeVariantsForm(request.POST,  initial={'product': product})
+        if form.is_valid():
+            variant = form.save(commit=False)
+            variant.product = product
+            variant.save()
+            messages.success(request, 'New size and quantity is updated')
+            return redirect('show_variants',product_id=product_id)
+    else:
+        form = ProductSizeVariantsForm()
+    return render(request, 'admin_dash/add_size_quantity.html', {'form':form})
 
 
 @login_required(login_url='admin_log_in')
 def update_size_of_quantity(request, variant_id):
     variant = get_object_or_404(Variants, id=variant_id)
     if request.method == 'POST':
-        size_quantity = request.POST.get('quantity')
-        if size_quantity and size_quantity.isdigit():
-            new_qty = int(size_quantity)
-            if new_qty <= 0:
-                messages.error(request, "Please enter a valid quantity greater than 0.")
-            elif new_qty > 500:
-                messages.error(request, "You can only add up to 500 quantity.")
-            else:
-                variant.quantity = new_qty
-                variant.save()
-                messages.success(request, 'Quantity updated successfully.')
-                return redirect('show_variants', product_id=variant.product.id)
-        else:
-            messages.error(request, "Please enter a valid number.")
-            
-    context = {
-        'variant': variant,
-    }
-    return render(request, 'admin_dash/edit_size_quantity.html', context)
-
+        form = ProductSizeVariantsForm(request.POST, instance=variant, initial={'product': variant.product})
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'{variant.product.name} product size variant updated successfully')
+            return redirect('show_variants',product_id=variant.product.id)
+        
+    else:
+        form = ProductSizeVariantsForm(instance=variant, initial={'product': variant.product})
+    return render(request, 'admin_dash/edit_size_quantity.html', {'form':form, 'variant':variant})
 
 
 
 @login_required(login_url='admin_log_in')
-def delete_product_size(request, variant_id) :
-    variant = Variants.objects.get(id=variant_id)
-    variant.delete()
-    messages.info(request, 'Product size & quantity removed')
-    product_id = variant.product.id
-    return redirect(reverse('show_variants', args=[product_id]))
+def block_product_size(request, variant_id, product_id) :
+    variant = get_object_or_404(Variants, id=variant_id, product=product_id)
+    if variant.is_available == True:
+        variant.is_available = False
+        variant.save()
+        messages.success(request, f'product size {variant.size } is blocked.')
+        product_id = variant.product.id
+        return redirect(reverse('show_variants', args=[product_id]))
+    else:
+        variant.is_available = True
+        variant.save()
+        messages.success(request, f'product size {variant.size } is unblocked.')
+        product_id = variant.product.id
+        return redirect(reverse('show_variants', args=[product_id]))
 
 
-
-# --------------- Orders Management ----------------------------
+    
+# ------------------ Orders Management ----------------
 
 @login_required(login_url='admin_log_in')
 def all_orders(request) :
-    all_orders = Order.objects.all()
-    context = {'all_orders':all_orders}
+    query = request.GET.get('query','').strip()
+    print('query', query)
+    if query:
+        all_orders = Order.objects.filter(
+            Q(tracking_no__icontains=query) | Q(fname__icontains=query) | Q(lname__icontains=query)    
+        ).order_by('-created_at','-id')
+    else:
+        all_orders = Order.objects.order_by('-created_at','-id')
+
+    paginate_query = paginate_queryset(all_orders, request, 10)
+    orders_with_return = set(OrderItem.objects.filter(status='Return Requested').values_list('order_id', flat=True))
+    context = {
+        'all_orders': paginate_query,
+        'orders_with_return': orders_with_return,
+        }
     return render(request, 'admin_dash/all_orders.html',context)
+
+
+
+@login_required(login_url='admin_log_in')
+def view_all_order_items(request):
+    time_range = request.GET.get('time_range', '')
+    status = request.GET.get('status', '')
+  
+    if status:
+        all_orders, total_amount_or_error = get_filtered_orders(time_range=time_range, status=status)
+    else:
+        all_orders, total_amount_or_error = get_filtered_orders(time_range=time_range)
+
+    paginate_query = paginate_queryset(all_orders, request, 10)
+    context = {
+        'all_order_items':paginate_query,
+        'status_choices': OrderItem.STATUS_CHOICES,
+        'selected_time_range': time_range,
+        'selected_status': status
+    }
+    return render(request, 'admin_dash/view_all_order_items.html', context )
+
 
 
 @login_required(login_url='admin_log_in')
 def view_single_order(request,ord_id):
-    order = Order.objects.filter(tracking_no=ord_id).first()
-    orderitems = OrderItem.objects.filter(order=order)
+    order = Order.objects.filter(id=ord_id).first()
+    orderitems = OrderItem.objects.filter(order=order).order_by('-id')
+     
+    items_with_forward_statuses = []
+    for item in orderitems:
+        if item.status in STATUS_FLOW:
+            current_index = STATUS_FLOW.index(item.status)
+            forward_statuses = STATUS_FLOW[current_index+1:]
+        else:
+            forward_statuses = []  
+        items_with_forward_statuses.append({
+            'item': item,
+            'forward_statuses': forward_statuses
+        })
+
+    cancellable_statuses = ['Pending', 'Confirmed', 'Out for Shipping', 'Shipped', 'Out for Delivery']
+    cancellable_items = orderitems.filter(status__in=cancellable_statuses)
+    can_cancel_all = cancellable_items.exists()
+
     context={
         'order':order,
         'orderitems':orderitems,
+        'orderitems_with_statuses': items_with_forward_statuses,
+        'can_cancel_all':can_cancel_all,
     }
     return render(request, 'admin_dash/view_single_order.html',context)
 
 
 
-@login_required(login_url='admin_log_in')
-def edit_order_status(request,ord_id):
-    order = Order.objects.filter(tracking_no=ord_id).first()
-    context = {'order':order}
-    return render(request, 'admin_dash/edit_order_status.html',context)
-
+#------------- Update order item status -------------
 
 @login_required(login_url='admin_log_in')
-def update_order_status(request,ord_id) :
-    order_updated = False 
-    if request.method == 'POST' :
-        new_status = request.POST.get('status')
-
-        order = Order.objects.filter(tracking_no=ord_id).first()
-        order.status = new_status
-        order.save()
-        messages.success(request, 'Order status updated')
-        order_updated = True 
-        return redirect('all_orders')
-    
-    return render(request, 'admin_dash/edit_order_status.html')
-
-
-@login_required(login_url='admin_log_in')
-def delete_order_admin(request,ord_id) :
-    order_item = Order.objects.filter(tracking_no=ord_id).first()
-    user_wallet, created = Wallet.objects.get_or_create(user=request.user, defaults={'wallet': 0})
-    if user_wallet is None:
-        raise Exception("User wallet not found or could not be created.")
-
-    order_items = OrderItem.objects.filter(order=order_item)
-
-    for item in order_items:
-        product = item.product
-        variant = Variants.objects.filter(product=product).first()
-        if variant:
-            variant.quantity += item.quantity
-            variant.save()
-
-    if order_item.payment_mode == 'paid by razorpay' or order_item.payment_mode == 'paid by wallet':
-        if user_wallet.wallet is None:
-            user_wallet.wallet = 0  # Set wallet to 0 if it is None
-        user_wallet.wallet += order_item.total_price
-        user_wallet.save()
+def update_single_order_status(request, ord_id):
+    if request.method == 'POST':
+        item_id = request.POST.get('item_id').strip()
+        new_status = request.POST.get('status').strip()
         
-    order_item.status = 'Cancel'    
-    order_item.save()
-    messages.success(request, 'Order successfully canceled.')
-    print('order delete ')
-    return redirect('all_orders')
+        if not item_id or not new_status:
+            messages.warning(request, "Item ID and status are required.")
+            return redirect('view_single_order', ord_id=ord_id)
+        
+        if new_status not in STATUS_FLOW:
+            messages.warning(request, "Invalid status selected. You can only update to a forward status.")
+            return redirect('view_single_order', ord_id=ord_id)
+        
+        
+        try:
+            order = Order.objects.get(id=ord_id)
+        except Order.DoesNotExist:
+            messages.warning(request, "Something wrong. Order does not exist.")
+            return redirect('view_single_order', ord_id=ord_id)
+        
+        try:
+            order_item = OrderItem.objects.get(order=order, id=item_id)
+        except OrderItem.DoesNotExist:
+            messages.warning(request, "Order item not found.")
+            return redirect('view_single_order', ord_id=ord_id)
+        
+        # prevent status to previous status
+        current_status_index = STATUS_FLOW.index(order_item.status) if order_item.status in STATUS_FLOW else -1 
+        new_status_index = STATUS_FLOW.index(new_status) 
+
+        if new_status_index <= current_status_index:
+            messages.warning(request, f"You cannot move status backward from '{order_item.status}' to '{new_status}'.")
+            return redirect('view_single_order', ord_id=ord_id)
+        
+        order_item.status = new_status
+        order_item.save()
+        messages.success(request, f"Order item status updated to '{new_status}'.")
+        return redirect('view_single_order',ord_id=ord_id)
+    
+    messages.warning(request, "Invalid request method.")
+    return redirect('view_single_order', ord_id=ord_id)
+
+
+
+#------------ Manage return order -------------
+
+@login_required(login_url='admin_log_in')
+def manage_return_request(request, ord_id):
+    if request.method == 'POST':
+        action = request.POST.get('action', '').strip()
+        item_id = request.POST.get('item_id', '').strip()
+
+        if action not in ['accept_return', 'reject_return']:
+            messages.warning(request, "Invalid action. Cannot perform this operation.")
+            return redirect('view_single_order', ord_id=ord_id)
+        if not item_id:
+            messages.warning(request, 'Order item ID missing. Please try again.')
+            return redirect('view_single_order', ord_id=ord_id)
+
+        try:
+            with transaction.atomic():
+                order = Order.objects.select_for_update().get(id=ord_id)
+                order_item = OrderItem.objects.select_for_update().get(order=order, id=item_id)
+
+                if order_item.status != 'Return Requested':
+                    messages.warning(request, 'Only delivered and return requested item can be managed for return.')
+                    return redirect('view_single_order', ord_id=ord_id)
+
+                if action == 'accept_return':
+                    # Update variant stock
+                    variant = Variants.objects.select_for_update().filter(product=order_item.product,size=order_item.size).first()
+                    if variant:
+                        variant.quantity += order_item.quantity
+                        variant.save()
+
+                    # Refund to wallet
+                    user_wallet, created = Wallet.objects.get_or_create(user=order.user, defaults={'wallet': 0})
+                    if user_wallet.wallet is None:
+                        user_wallet.wallet = 0
+                    
+                    refund_amount = 0
+                    if order.payment_mode in ['paid by razorpay', 'paid by wallet']:
+                        total_price = order_item.price * order_item.quantity
+                        user_wallet.wallet += total_price
+                        refund_amount = total_price
+                        user_wallet.save()
+                    
+                        # Create payment history for tracking transaction
+                        create_payment(
+                            user=order.user,
+                            order=order,
+                            transaction_type='Refund',
+                            amount=refund_amount,
+                            payment_mode=order.payment_mode,
+                            description= f"Return accepted for '{order_item.product.name}' (Qty: {order_item.quantity}) from Order {order.tracking_no}"
+                        )
+                        
+                    # Update order item status
+                    order_item.status = 'Returned'
+                    order_item.save()
+
+                    messages.success(request, f'{order_item.product.name} return request accepted.')
+                    return redirect('view_single_order', ord_id=ord_id)
+
+                else:  # reject_return
+                    order_item.status = 'Return Rejected'
+                    order_item.save()
+                    messages.warning(request, f'{order_item.product.name} return request rejected.')
+                    return redirect('view_single_order', ord_id=ord_id)
+
+        except Order.DoesNotExist:
+            messages.warning(request, "Order not found.")
+        except OrderItem.DoesNotExist:
+            messages.warning(request, "Order item not found.")
+        except Exception as e:
+            print(f"Error during return request handling: {e}")
+            messages.warning(request, "Something went wrong while processing the return request.")
+
+        return redirect('view_single_order', ord_id=ord_id)
+
+    messages.warning(request, "Invalid request method.")
+    return redirect('view_single_order', ord_id=ord_id)
+        
+
+
+# ----------------- Cancel single order item ------------------
+
+@login_required(login_url='admin_log_in')
+def cancel_single_order_by_admin(request, ord_id):
+    if request.method == 'POST':
+        cancel_reason = request.POST.get('cancel_reason','').strip()
+        item_id = request.POST.get('item_id').strip()
+
+        if not cancel_reason:
+            messages.warning(request, "Cancel reason is required.")
+            return redirect('view_single_order', ord_id=ord_id)
+        if len(cancel_reason) < 10:
+            messages.warning(request, "Cancel reason must be at least 10 characters. Please enter valid reason.")
+            return redirect('view_single_order', ord_id=ord_id)
+        if cancel_reason.isdigit() or re.fullmatch(r'[^\w\s]+', cancel_reason):
+            messages.warning(request, "Cancel reason must contain valid text, not just digits or special characters.")
+            return redirect('view_single_order', ord_id=ord_id)
+        if not item_id:
+            messages.warning(request, "Something went wrong with the order. Please try again later.")
+            return redirect('view_single_order', ord_id=ord_id)
+
+        try:
+            with transaction.atomic():
+                order = Order.objects.select_for_update().get(id=ord_id)
+                order_item = OrderItem.objects.select_for_update().get(order=order, id=item_id)
+
+                if order_item.status == 'Cancelled':
+                    messages.warning(request, f'{order_item.product.name} is already cancelled.')
+                    return redirect('view_single_order', ord_id=ord_id)
+
+                # Update stock
+                variant = Variants.objects.select_for_update().filter(product=order_item.product, size=order_item.size).first()
+                if variant:
+                    variant.quantity += order_item.quantity
+                    variant.save()
+
+                # Refund if needed
+                user_wallet, created = Wallet.objects.get_or_create(user=order.user, defaults={'wallet': 0})
+                if user_wallet.wallet is None:
+                    user_wallet.wallet = 0
+                refund_amount = 0
+                if order.payment_mode in ['paid by razorpay', 'paid by wallet']:
+                    total_price = order_item.price * order_item.quantity
+                    user_wallet.wallet += total_price
+                    refund_amount = total_price
+                    user_wallet.save()
+                
+                    # Create payment history for tracking transaction
+                    create_payment(
+                        user=order.user,
+                        order=order,
+                        transaction_type='Refund',
+                        amount=refund_amount,
+                        payment_mode=order.payment_mode,
+                        description=f"Refund for cancellation of '{order_item.product.name}' (Qty: {order_item.quantity}) from Order {order.tracking_no}."
+                    )
+
+                # Update order item
+                order_item.status = 'Cancelled'
+                order_item.cancel_reason = cancel_reason
+                order_item.cancelled_by = 'admin'
+                order_item.save()
+                
+                messages.success(request, f'{order_item.product.name} has been cancelled successfully.')
+                return redirect('view_single_order', ord_id=ord_id)
+
+        except Order.DoesNotExist:
+            messages.warning(request, "Order not found.")
+        except OrderItem.DoesNotExist:
+            messages.warning(request, "Order item not found.")
+        except Exception as e:
+            print(f" Error during single item cancellation: {e}")
+            messages.error(request, "Something went wrong while cancelling the order item. Please try again.")
+        
+        return redirect('view_single_order', ord_id=ord_id)
+
+    messages.warning(request, "Invalid request method.")
+    return redirect('view_single_order', ord_id=ord_id)
+
+
+
+#-----------------------  Cancel all order ------------------
+
+@login_required(login_url='admin_log_in')
+def cancel_all_order_by_admin(request, ord_id):
+    if request.method == 'POST':
+        cancel_reason = request.POST.get('cancel_reason', '').strip()
+
+        if not cancel_reason:
+            messages.warning(request, "Cancel reason is required.")
+            return redirect('view_single_order', ord_id=ord_id)
+        if len(cancel_reason) < 10:
+            messages.warning(request, "Cancel reason must be at least 10 characters. Please enter valid reason.")
+            return redirect('view_single_order', ord_id=ord_id)
+        if cancel_reason.isdigit() or re.fullmatch(r'[^\w\s]+', cancel_reason):
+            messages.warning(request, "Cancel reason must contain valid text, not just digits or special characters.")
+            return redirect('view_single_order', ord_id=ord_id)
+
+        try:
+            with transaction.atomic():
+                order = Order.objects.select_for_update().get(id=ord_id)
+
+                user_wallet, created = Wallet.objects.get_or_create(user=order.user, defaults={'wallet': 0})
+                if user_wallet is None:
+                    raise Exception("User wallet is invalid.")
+
+                cancellable_statuses = ['Pending', 'Confirmed', 'Out for Shipping', 'Shipped', 'Out for Delivery']
+                order_items = OrderItem.objects.select_for_update().filter(order=order)
+                cancellable_items = order_items.filter(status__in=cancellable_statuses)
+
+                if not cancellable_items.exists():
+                    raise Exception("No items in this order are eligible for cancellation.")
+
+                # Update Variant stock
+                for item in cancellable_items:
+                    product = item.product
+                    size = item.size
+                    variant = Variants.objects.select_for_update().filter(product=product, size=size).first()
+                    if variant:
+                        variant.quantity += item.quantity
+                        variant.save()
+
+                # Refund if payment was online
+                if order.payment_mode in ['paid by razorpay', 'paid by wallet']:
+                    if user_wallet.wallet is None:
+                        user_wallet.wallet = 0
+                    
+                    total_refund = 0
+                    for item in cancellable_items:
+                        total_price_for_item = item.price * item.quantity
+                        user_wallet.wallet += total_price_for_item
+                        total_refund += total_price_for_item
+                    user_wallet.save()
+
+                    # Create payment history for tracking transaction 
+                    create_payment(
+                        user=order.user,
+                        order=order,
+                        transaction_type='Refund',
+                        amount=total_refund,
+                        payment_mode=order.payment_mode,
+                        description=f'Refund for cancelled items in Order {order.tracking_no}'
+                    )
+
+                # Update status & cancel reason
+                for item in cancellable_items:
+                    item.status = 'Cancelled'
+                    item.cancel_reason = cancel_reason
+                    item.cancelled_by = 'admin'
+                    item.save()
+                
+                messages.success(request, f'This {order.tracking_no} all order is cancelled')
+                return redirect('view_single_order', ord_id=ord_id)
+
+        except Order.DoesNotExist:
+            messages.warning(request, "Something wrong. Order does not exist")
+            return redirect('view_single_order', ord_id=ord_id)
+        except Exception as e:
+            print("Error during cancellation:", str(e))
+            messages.error(request, f"Failed to cancel order. Please try again later")
+            return redirect('view_single_order', ord_id=ord_id)
+
+    messages.warning(request, "Invalid request method.")
+    return redirect('view_single_order', ord_id=ord_id)
 
 
 
@@ -597,105 +863,68 @@ def delete_order_admin(request,ord_id) :
 
 @login_required(login_url='admin_log_in')
 def view_coupons(request) :
-    # all_coupons = Coupon.objects.filter(is_expired=False)
-    all_coupons = Coupon.objects.all().order_by('-id')
-    context={'all_coupons':all_coupons}
-    return render(request, 'admin_dash/coupon_management.html',context)
+    query = request.GET.get('query', '').strip()
+    if query:
+        all_coupons = Coupon.objects.filter(coupon_code__icontains=query).order_by('-id')
+    else:
+        all_coupons = Coupon.objects.all().order_by('-id')
+    paginate_query = paginate_queryset(all_coupons, request, 8)
+
+    return render(request, 'admin_dash/coupon_management.html', {'all_coupons':paginate_query})
 
 
 @login_required(login_url='admin_log_in')
 def add_coupon(request) :
     if request.method=='POST' :
-        code = request.POST.get('coupon')
-        min_amount = request.POST.get('minimum_amount')
-        dis_amount = request.POST.get('discount_amount')
-        if code.strip()=='' or min_amount.strip()=='' or dis_amount.strip()=='' :
-            messages.warning(request, 'Fields cannot be empty!')
-            return redirect('add_coupon')
-        if code.isdigit() :
-            messages.error(request, 'Coupon code can not only contain numbers')
-            return redirect('add_coupon')
-        if not min_amount.isdigit() or int(min_amount) <= 0  :
-            messages.error(request, 'Ente a valid Minimum Amount')
-            return redirect('add_coupon')
-        if not dis_amount.isdigit() or int(dis_amount)<= 0  :
-            messages.error(request, 'Ente a valid Discount Amount')
-            return redirect('add_coupon')
-        if int(dis_amount) > int(min_amount) :
-            messages.error(request, 'Discount amount should be lessthan  Minimum Amount')
-            return redirect('add_coupon')
-
-        if Coupon.objects.filter(coupon_code=code).exists() :
-            messages.warning(request, 'Coupon already exist!')
-            return redirect('add_coupon')
-        coupon = Coupon.objects.create(
-            coupon_code = code,
-            minimum_amount = min_amount,
-            discound_amount = dis_amount,
-            )
-        coupon.save()
-        messages.success(request, 'Coupon successfully added')
-        return redirect('view_coupons')
-    return render(request, 'admin_dash/add_coupon.html')
+        form = CouponForm(request.POST)
+        if form.is_valid():
+            coupon_code = form.cleaned_data['coupon_code']
+            form.save()
+            messages.success(request, f'{coupon_code} new coupon is created successfully.')
+            return redirect('view_coupons')
+    else:
+        form = CouponForm()
+    return render(request, 'admin_dash/add_coupon.html', {'form':form})
 
 
 @login_required(login_url='admin_log_in')
 def delete_coupon(request,c_id) :
     coupon = Coupon.objects.get(id=c_id) 
-    if coupon.is_expired==False :
-        coupon.is_expired=True
+    if coupon.is_active==True :
+        coupon.is_active=False
         coupon.save()
         messages.warning(request, 'Coupon is blocked')
         return redirect('view_coupons')
     else :
-        coupon.is_expired=False
+        coupon.is_active=True
         coupon.save()
         messages.success(request, 'Coupon is Unblocked')
-        return redirect('view_coupons')
+        return redirect('view_coupons') 
     
-
+    
 # ------------------- Offer Management ------------------
-
 def view_offers(request) :
-    offers = Offer.objects.all().order_by('-start_date', '-id')
-    return render(request, 'admin_dash/offer_management.html',{'offers':offers})
+    query = request.GET.get('query', '').strip()
+    if query:
+        all_offers = Offer.objects.filter(title__icontains=query).order_by('-start_date', '-id')
+    else:
+        all_offers = Offer.objects.all().order_by('-start_date', '-id')
+    paginate_query = paginate_queryset(all_offers, request, 8)
+    return render(request, 'admin_dash/offer_management.html',{'all_offers':paginate_query, 'query':query})
+
 
 def add_offer(request):
     if request.method == 'POST':
         form = OfferForm(request.POST)
         if form.is_valid():
-            end_date = form.cleaned_data['end_date']
-            try:
-                end_date.strftime('%Y-%m-%d')
-            except ValueError:
-                form.add_error('end_date', 'Invalid date format. Please use YYYY-MM-DD.')
-
-            now = timezone.now()
-            if end_date <= now:
-                form.add_error('end_date', 'End date must be greater than the current date and time.')
-
-            discount_percentage = form.cleaned_data['discount_percentage']
-            try:
-                float(discount_percentage)
-                if discount_percentage < 0 :
-                    form.add_error('discount_percentage', 'Enter a Positive number')
-                if discount_percentage > 75 :
-                    form.add_error('discount_percentage', 'Only 75% maximum discount percentage allowed!') 
-
-            except ValueError:
-                form.add_error('discount_percentage', 'Discount amount must be a valid number.')
-
-            if not form.errors:
-                form.save()
-                messages.success(request, "Offer added successfully.")
-                return redirect('view_offers')
-
+            offer_title = form.cleaned_data['title']
+            form.save()
+            messages.success(request, f"{offer_title} new offer added successfully.")
+            return redirect('view_offers')
     else:
         form = OfferForm()
 
-    context = {'form': form}
-    return render(request, 'admin_dash/add_offer.html', context)
-
+    return render(request, 'admin_dash/add_offer.html', {'form': form})
 
 
 def delete_offer(request, off_id):
@@ -704,10 +933,10 @@ def delete_offer(request, off_id):
     offer.save()
 
     if offer.is_block:
-        messages.success(request, "Offer is Blocked")
+        messages.success(request, f"{offer.title} Offer is Blocked")
         return redirect('view_offers')  
     else:
-        messages.success(request, "Offer is Unblocked")
+        messages.success(request, f"{offer.title} Offer is Unblocked")
         return redirect('view_offers')  
     
 
@@ -716,15 +945,15 @@ def delete_offer(request, off_id):
 
 @login_required(login_url='admin_log_in')
 def view_category_offers(request) :
-    categories = Category.objects.filter(is_available=True).order_by('-id')
-    return render(request, 'admin_dash/category_offers.html',{'categories':categories})
+    query = request.GET.get('query', '').strip()
+    if query:
+        categories = Category.objects.filter(name__icontains=query, is_available=True).order_by('-id')
+    else:
+        categories = Category.objects.filter(is_available=True).order_by('-id')
+    
+    paginate_query = paginate_queryset(categories, request, 8)
+    return render(request, 'admin_dash/category_offers.html',{'categories':paginate_query, 'query':query})
 
-
-@login_required(login_url='admin_log_in')
-def offers_for_category(request,c_id) :
-    category = get_object_or_404(Category, id=c_id)
-    form = CategoryOfferForm(instance=category)
-    return render(request, 'admin_dash/apply_offer_for_category.html',{'form':form,'category':category}) 
 
 
 @login_required(login_url='admin_log_in')
@@ -735,16 +964,16 @@ def update_category_offer(request,c_id) :
         if form.is_valid() :
             form.save()
             
-            products_in_category = Product.objects.filter(categories=category)
+            products_in_category = Product.objects.filter(categories=category, is_available=True)
             for product in products_in_category :
                 product.offer = category.offer
                 product.save()
             messages.success(request, 'Offer applied for category')
             return redirect(view_category_offers)
     else :
-        form = CategoryForm(instance=category)
+        form = CategoryOfferForm(instance=category)
 
-    return render(request, 'admin_dash/apply_offer_for_category.html') 
+    return render(request, 'admin_dash/apply_offer_for_category.html', {'form':form,'category':category}) 
 
 
 @login_required(login_url='admin_log_in')
@@ -765,14 +994,15 @@ def remove_category_offer(request,c_id) :
 
 @login_required(login_url='admin_log_in')
 def veiw_product_offers(request) :
-    products = Product.objects.filter(is_available=True).order_by('-id')
-    return render(request, 'admin_dash/product_offers.html',{'products':products})
+    query = request.GET.get('query', '').strip()
+    if query:
+        products = Product.objects.filter(name__icontains=query, is_available=True).order_by('-id')
+    else:
+        products = Product.objects.filter(is_available=True).order_by('-id')
+    paginate_query = paginate_queryset(products, request, 8)
+    return render(request, 'admin_dash/product_offers.html',{'products':paginate_query, 'query':query})
 
-@login_required(login_url='admin_log_in')
-def offers_for_product(request,p_id) :
-    product = get_object_or_404(Product, id=p_id)
-    form = ProductOfferForm(instance=product)
-    return render(request, 'admin_dash/apply_offer_for_product.html',{'form':form,'product':product})
+
 
 @login_required(login_url='admin_log_in')
 def update_product_offer(request,p_id) :
@@ -785,7 +1015,7 @@ def update_product_offer(request,p_id) :
             return redirect(veiw_product_offers)
     else :
         form = ProductOfferForm(instance=product)
-    return render(request, 'admin_dash/apply_offer_for_product.html')
+    return render(request, 'admin_dash/apply_offer_for_product.html', {'form':form,'product':product})
 
 
 @login_required(login_url='admin_log_in')
@@ -798,7 +1028,7 @@ def remove_product_offer(request,p_id) :
 
 
 
-# ----------------------- Banner Management ----------------
+# --------------- Banner Management ----------------
 
 @login_required(login_url='admin_log_in')
 def banner_management(request):
@@ -813,26 +1043,10 @@ def banner_management(request):
 def add_banner_image(request) :
     if request.method == 'POST' :
         form = BannerForm(request.POST, request.FILES)
-        if form.is_valid() :
-            title      = form.cleaned_data['title']
-            subtitle_1 = form.cleaned_data['subtitle_1']
-            subtitle_2 = form.cleaned_data['subtitle_2']
-
-            if title.isdigit() :
-                form.add_error('title', 'Ente a valid Banner title ')
-
-            if subtitle_2.isdigit() :
-                form.add_error('subtitle_1', "Enter a valid subtitle ")
-
-            if subtitle_1.isdigit() :
-                form.add_error('subtitle_2', "Enter a valid subtitle ")
-            if subtitle_1 == subtitle_2 :
-                form.add_error('subtitle_2', "Subtitle 1 and Subtitle 2 must be different.")
-
-            if not form.errors :        
-                form.save()
-                messages.success(request, "Banner successfully Added")
-                return redirect('banner_management')
+        if form.is_valid() :  
+            form.save()
+            messages.success(request, "Banner successfully Added")
+            return redirect('banner_management')
     else :
         form = BannerForm()  
     return render(request, 'admin_dash/add_banner.html',{'form':form})
@@ -859,141 +1073,42 @@ def delete_banner(request,b_id) :
 @login_required(login_url='admin_log_in')
 def dash_board(request) :
     total_products   = Product.objects.filter(is_available=True).count()
-    total_revenue    = Order.objects.filter(status='Deliverd').aggregate(Sum('total_price'))['total_price__sum'] or 0
+    total_revenue = OrderItem.objects.filter(status='Delivered').aggregate(total=Sum(F('price') * F('quantity')))['total'] or 0
+
     today = timezone.now()
     start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    monthly_revenue = Order.objects.filter(status='Deliverd', created_at__gte=start_of_month).aggregate(Sum('total_price'))['total_price__sum'] or 0
-
-    total_sales      = Order.objects.filter(status='Deliverd').count()
+    monthly_revenue = OrderItem.objects.filter(status='Delivered', created_at__gte=start_of_month).aggregate(total=Sum(F('price') * F('quantity')))['total'] or 0
+   
     total_customers  = User.objects.filter(is_active=True,is_superuser=False).count()
+
     total_orders = (
-        OrderItem.objects.filter(order__status='Deliverd')
-        .aggregate(count=Count('id'))
+        OrderItem.objects.aggregate(count=Count('id'))
     )['count'] or 0
 
-    cod_count = Order.objects.filter(status='Deliverd', payment_mode='COD').count()
-    razorpay_count = Order.objects.filter(status='Deliverd', payment_mode='paid by razorpay').count()
-    wallet_count = Order.objects.filter(status='Deliverd', payment_mode='paid by wallet').count()
+    cod_count = Order.objects.filter(payment_mode='COD').count()
+    razorpay_count = Order.objects.filter(payment_mode='paid by razorpay').count()
+    wallet_count = Order.objects.filter(payment_mode='paid by wallet').count()
     
-    order_item_counts_by_month = (
-        OrderItem.objects.filter(order__status='Deliverd')
-        .annotate(month=TruncMonth('order__created_at'))
-        .values('month')
-        .annotate(count=Count('id'))
-    )
-
-    # Create a dictionary with month as key and count as value
-    order_item_counts_dict = {entry['month'].strftime('%Y-%m'): entry['count'] for entry in order_item_counts_by_month}
-
-    # Generate a list of all 12 months
-    all_months = [(start_of_month - timedelta(days=30 * i)).strftime('%Y-%m') for i in range(11, -1, -1)]
-
-    # Fill in counts for each month, defaulting to zero if no data for that month
-    order_item_counts_data = [order_item_counts_dict.get(month, 0) for month in all_months]
-
-   
-
     context = {
         'total_products'  :total_products,
         'total_customers' :total_customers,
         'total_revenue'   : total_revenue,
         'monthly_revenue' : monthly_revenue,
-        'total_sales'     : total_sales,
         'total_orders'    : total_orders,
         'cod_count'       : cod_count,
         'razorpay_count'  : razorpay_count,
         'wallet_count'    : wallet_count,
-        'order_item_chart_labels': all_months,
-        'order_item_chart_data': order_item_counts_data,
-       
-       
     }
     return render(request, 'admin_dash/admin_dash.html',context)
-
-
-
-@login_required(login_url='admin_log_in')
-def view_sales_reports(request) :
-    time_range = request.GET.get('time_range')
-
-    if not time_range:
-        time_range = 'all'
-
-    if time_range == 'day':
-        # start_date = timezone.now() - timedelta(days=1)
-        start_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-    elif time_range == 'week':
-        start_date = timezone.now() - timedelta(weeks=1)
-    elif time_range == 'month':
-        start_date = timezone.now() - timedelta(days=30)
-    elif time_range == 'year':
-        start_date = timezone.now() - timedelta(days=365)
-    elif time_range == 'all':
-        start_date = timezone.now() - timedelta(days=365) 
-    else:
-        # Handle invalid time_range values or implement additional options as needed
-        start_date = timezone.now()
-
-    # orders = Order.objects.filter(status='Deliverd').order_by('-id')
-    orders = Order.objects.filter(status='Deliverd', created_at__gte=start_date).order_by('-id')
-    return render(request, 'admin_dash/view_sales_reports.html', {'orders': orders, 'selected_time_range': time_range})
-
-
-
-# ----------------- Generate sales report (PDF) -------------------
-
-@login_required(login_url='admin_log_in')
-def download_pdf(request):
-    time_range = request.GET.get('time_range')
-
-    if not time_range:
-        time_range = 'all'
-
-    if time_range == 'day':
-        # start_date = timezone.now() - timedelta(days=1)
-        start_date = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
-    elif time_range == 'week':
-        start_date = timezone.now() - timedelta(weeks=1)
-    elif time_range == 'month':
-        start_date = timezone.now() - timedelta(days=30)
-    elif time_range == 'year':
-        start_date = timezone.now() - timedelta(days=365)
-    elif time_range == 'all':
-        start_date = timezone.now() - timedelta(days=365)  # Or adjust the duration as needed for all reports
-    else:
-        # Handle invalid time_range values or implement additional options as needed
-        start_date = timezone.now()
-    orders = Order.objects.filter(status='Deliverd', created_at__gte=start_date).order_by('-id')
-    total_sale_amount = 0
-    for order in orders :
-        total_sale_amount += order.total_price
-
-    context = {
-        'orders': orders,
-        'total_sale_amount': total_sale_amount,
-        # 'selected_time_range': request.GET.get('time_range', 'all'),
-    }
-
-    pdf = render_to_pdf('pdfs/salesreport.html', context)
-
-    if pdf:
-        response = HttpResponse(pdf, content_type='application/pdf')
-        response['Content-Disposition'] = 'filename="sales_report.pdf"'
-        return response
-
-    return HttpResponse("Error generating PDF", status=500)
-
 
 
 
 def get_sales_data(request, period):
     if period == 'week':
         start_date = timezone.now().date() - timezone.timedelta(days=6)
-        order_items = OrderItem.objects.filter(order__created_at__gte=start_date)
+        order_items = OrderItem.objects.filter(created_at__gte=start_date, status='Delivered')
         data = (
-            order_items.annotate(day=TruncDay('order__created_at'))
+            order_items.annotate(day=TruncDay('created_at'))
             .values('day')
             .annotate(total=Sum(F('quantity') * F('price')))
             .order_by('day')
@@ -1001,9 +1116,9 @@ def get_sales_data(request, period):
         labels = [item['day'].strftime('%A') for item in data]
     elif period == 'month':
         start_date = timezone.now().date() - timezone.timedelta(days=30)
-        order_items = OrderItem.objects.filter(order__created_at__gte=start_date)
+        order_items = OrderItem.objects.filter(created_at__gte=start_date, status='Delivered')
         data = (
-            order_items.annotate(day=TruncDay('order__created_at'))
+            order_items.annotate(day=TruncDay('created_at'))
             .values('day')
             .annotate(total=Sum(F('quantity') * F('price')))
             .order_by('day')
@@ -1011,9 +1126,9 @@ def get_sales_data(request, period):
         labels = [item['day'].strftime('%Y-%m-%d') for item in data]
     elif period == 'year':
         start_date = timezone.now().date() - timezone.timedelta(days=365)
-        order_items = OrderItem.objects.filter(order__created_at__gte=start_date)
+        order_items = OrderItem.objects.filter(created_at__gte=start_date, status='Delivered')
         data = (
-            order_items.annotate(month=TruncMonth('order__created_at'))
+            order_items.annotate(month=TruncMonth('created_at'))
             .values('month')
             .annotate(total=Sum(F('quantity') * F('price')))
             .order_by('month')
@@ -1025,3 +1140,69 @@ def get_sales_data(request, period):
     sales_data = [item['total'] for item in data]
     return JsonResponse({'labels': labels, 'data': sales_data})
 
+
+
+
+@login_required(login_url='admin_log_in')
+def view_sales_reports(request) :
+   
+    orders, total_amount_or_error = get_filtered_orders(
+        time_range=request.GET.get('time_range'),
+        start_date_input=request.GET.get('start_date'),
+        end_date_input=request.GET.get('end_date'),
+        status='Delivered'
+    )
+
+    if orders is None:
+        messages.warning(request, total_amount_or_error)
+        return redirect('view_sales_reports')
+    
+    paginate_data = paginate_queryset(orders, request, 10)
+    
+    context = {
+        'orders': paginate_data,
+        'selected_time_range': request.GET.get('time_range', 'all'),
+        'total_amount':total_amount_or_error
+    }
+
+    return render(request, 'admin_dash/view_sales_reports.html', context)
+
+
+
+
+# ------------- Generate sales report (PDF) -------------
+
+@login_required(login_url='admin_log_in')
+def download_pdf(request):
+    time_range = request.GET.get('time_range')
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    orders, total_amount_or_error = get_filtered_orders(
+        time_range=time_range,
+        start_date_input=start_date,
+        end_date_input=end_date,
+        status='Delivered'
+    )
+
+    if orders is None:
+        return HttpResponse(total_amount_or_error, status=400)
+    
+    period = get_period_label(time_range)
+
+    context = {
+        'orders': orders,
+        'total_sale_amount': total_amount_or_error,
+        'time_range': period,
+        'start_date': start_date,
+        'end_date': end_date,
+    }
+
+    pdf = render_to_pdf('pdfs/salesreport.html', context)
+
+    if pdf:
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = 'filename="sales_report.pdf"'
+        return response
+
+    return HttpResponse("Error generating PDF", status=500)

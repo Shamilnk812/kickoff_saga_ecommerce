@@ -3,14 +3,20 @@ from django.db import models
 from admin_dash.models import Product,Variants
 from django.contrib.auth.models import User
 from .models import * 
+from decimal import Decimal
 # Create your models here.
 
 
 class Coupon(models.Model) :
     coupon_code = models.CharField(max_length=150)
-    is_expired = models.BooleanField(default=False)
-    discound_amount = models.IntegerField(default=100)
     minimum_amount = models.IntegerField(default=1000)
+    discount_percentage = models.PositiveIntegerField(default=5)
+    is_active = models.BooleanField(default=True)
+
+    def calculate_discount(self, total):
+        if total >= self.minimum_amount:
+            return total * (Decimal(self.discount_percentage) / Decimal('100'))
+        return 0
 
 
 class UsedCoupon(models.Model) :
@@ -27,9 +33,18 @@ class Cart(models.Model) :
     created_at = models.DateField(auto_now_add=True)
     shipping_cost = models.DecimalField(max_digits=5, decimal_places=2, default=0)
 
+    @property
+    def is_valid_cart_item(self):
+        return (
+            self.product.is_available and
+            self.product.categories.is_available and
+            self.product.brand.is_available
+        )
     
     @property
     def total_cost(self):
+        if not self.is_valid_cart_item:
+            return 0
         product_price = self.product.discounted_price() if self.product.offer and self.product.offer.is_valid else self.product.price
         return self.product_qty * product_price
     
@@ -40,31 +55,19 @@ class Cart(models.Model) :
             variant = Variants.objects.get(product=self.product, size=self.size)
             return variant.quantity >= self.product_qty
         except Variants.DoesNotExist:
-            return False  # If variant doesn't exist, treat it as out of stock
-
+            return False  
+    
     @classmethod
     def total_cost_for_user(cls, user):
         user_carts = cls.objects.filter(user=user)
-        return sum(cart.total_cost for cart in user_carts)
+        total = 0
+
+        for cart in user_carts:
+            if cart.is_valid_cart_item:
+                total += cart.total_cost
+        return total
     
-    # def total_saved_amount_for_products_with_offers(self):
-    #     total_saved_amount = 0
-
-    #     for cart_item in Cart.objects.filter(user=self.user, product__offer__is_valid=True):
-    #         total_saved_amount += cart_item.product.offer_save_amount() * cart_item.product_qty
-
-    #     return total_saved_amount
-
-    # def total_saved_amount_for_products_with_offers(self):
-    #     total_saved_amount = 0
-
-    #     for cart_item in Cart.objects.filter(user=self.user, product__offer__is_valid=True):
-    #         product_offer_save_amount = cart_item.product.offer_save_amount()
-    #         print(f"Product: {cart_item.product.name}, Offer Save Amount: {product_offer_save_amount}")
-    #         total_saved_amount += product_offer_save_amount * cart_item.product_qty
-
-    #     print(f"Total Saved Amount: {total_saved_amount}")
-    #     return total_saved_amount
+    
 
 
 class Order(models.Model) :
@@ -81,15 +84,6 @@ class Order(models.Model) :
     total_price = models.FloatField(null=False)
     payment_mode = models.CharField(max_length=150, null=False)
     payment_id = models.CharField( max_length=250, null=True)
-    order_status = (
-        ('Order Confirmed','Order Confirmed'),
-        ('Out For Shipping','Out For Shipping'),
-        ('Shipped','Shipped'),
-        ('Out For Delivery','Out For Delivery'),
-        ('Deliverd','Deliverd'),
-        ('Cancel','Cancel')
-    )
-    status = models.CharField(max_length=150, choices=order_status, default='Order Confirmed')
     message = models.TextField(null=True)
     tracking_no = models.CharField(max_length=150, null=True)
     updated_at = models.DateField( auto_now=True)
@@ -98,6 +92,8 @@ class Order(models.Model) :
     cancel_reason = models.TextField(null=True)
     coupon_discount_amount = models.FloatField(null=True)
     offer_discount_amount = models.FloatField(null=True)
+    shipping_type = models.CharField(max_length=50, default='free-shipping')
+    shipping_amount = models.FloatField(default=0)
     
 
 
@@ -107,13 +103,42 @@ class OrderItem(models.Model) :
     price    = models.FloatField(null=False)
     quantity = models.IntegerField(null=False)
     size     = models.FloatField(null=False,default=0)
+    offer_saved_amount = models.FloatField(null=True, blank=True)
+    updated_at = models.DateField(auto_now=True)
+    created_at = models.DateField(auto_now_add=True) 
+    
+    STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Confirmed','Confirmed'),
+        ('Out for Shipping', 'Out for Shipping'),
+        ('Shipped', 'Shipped'),
+        ('Out for Delivery', 'Out for Delivery'),
+        ('Delivered', 'Delivered'),
+        ('Return Requested', 'Return Requested'),
+        ('Return Rejected', 'Return Rejected'),
+        ('Returned', 'Returned'),
+        ('Cancelled', 'Cancelled'),
+    )
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Pending')
+    cancel_reason = models.TextField(null=True, blank=True)
+    return_reason = models.TextField(null=True, blank=True)
+    cancelled_by = models.CharField(null=True, blank=True)
     
     @property
     def total_price(self):
         return self.price * self.quantity
     
 
+
 class Wishlist(models.Model) :
     user       = models.ForeignKey(User, on_delete=models.CASCADE)    
     product    = models.ForeignKey(Product,on_delete=models.CASCADE)
     created_at = models.DateField(auto_now_add=True)
+    
+    @property
+    def is_valid_wishlist_item(self):
+        return (
+            self.product.is_available and
+            self.product.categories.is_available and
+            self.product.brand.is_available
+        )

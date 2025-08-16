@@ -76,6 +76,78 @@
 <body>
     <div class="invoice">
         <div class="invoice-inner">
+            <div class="invoice-header">
+                <h1>Kickoff Saga Invoice</h1>
+                <p><strong>Invoice Number:</strong> #{{ invoice_number }}</p>
+                <p><strong>Invoice Date:</strong> {{ order.created_at }}</p>
+            </div>
+
+            <div class="address-blocks">
+                <div class="invoice-to">
+                    <h4>Invoice To</h4>
+                    <p>
+                        <strong>Kickoff</strong><br>
+                        205 North Michigan Avenue, Suite 8140<br>
+                        Chiui, 60601, India<br>
+                        Phone: (+91) 9744421036<br>
+                        Email: Kickoff@gmail.com
+                    </p>
+                </div>
+
+                <div class="bill-to">
+                    <h4>Bill To</h4>
+                    <p>
+                        <strong>{{ order.fname }}</strong><br>
+                        {{ order.address }}<br>
+                        {{ order.city }}, {{ order.state }}, {{ order.country }}<br>
+                        Phone: {{ order.phone }}<br>
+                        Email: {{ order.email }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="order-details">
+                <h3>Order Item</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Unit Price</th>
+                            <th>Quantity</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                {{ order_item.product.name }}<br>
+                                <small>Size: {{ order_item.size }}</small>
+                            </td>
+                            <td>₹{{ order_item.price }}</td>
+                            <td>{{ order_item.quantity }}</td>
+                            <td>₹{{ order_item.total_price}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="payment-info">
+                <p><strong>Payment Method:</strong> {{ order.payment_mode }}</p>
+                {% if order.coupon_discount_amount > 0 %}
+                    <p><strong>Coupon Discount:</strong> ₹{{ order.coupon_discount_amount }}</p>
+                {% endif %}
+                {% if order.offer_discount_amount > 0 %}
+                    <p><strong>Offer Discount:</strong> ₹{{ order.offer_discount_amount }}</p>
+                {% endif %}
+            </div>
+
+            <div class="total">
+                <h4>Total Paid for this item: ₹{{ order_item.total_price}}</h4>
+            </div>
+        </div>
+    </div>
+    {% comment %} <div class="invoice">
+        <div class="invoice-inner">
             <div class="invoice-info" id="invoice_wrapper">
                 <div class="invoice-header">
                     <div class="invoice-title">Invoice</div>
@@ -138,13 +210,11 @@
                         {% endif %}
                     </div>
                     <div class="total-amount">Total Amount: ${{ order.total_price }}</div>
-                    <div class="note">
-                        <strong>Note:</strong> This is a computer-generated receipt and does not require a physical signature.
-                    </div>
+        
                 </div>
             </div>
         </div>
-    </div>
+    </div> {% endcomment %}
 </body>
 
 </html>

@@ -1,0 +1,34 @@
+
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="d-flex justify-content-center mt-4">
+  <nav>
+    <ul class="pagination pagination-sm" style="font-size: 0.8rem;">
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link px-2 py-1" 
+             href="?{% if query %}query={{ query }}&{% endif %}{% if selected_time_range %}time_range={{ selected_time_range }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}page={{ page_obj.previous_page_number }}"
+          ><</a>
+        </li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="page-item active"><span class="page-link px-2 py-1">{{ num }}</span></li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li class="page-item"><a class="page-link px-2 py-1" 
+               href="?{% if query %}query={{ query }}&{% endif %}{% if selected_time_range %}time_range={{ selected_time_range }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}page={{ num }}">
+           {{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link px-2 py-1"
+             href="?{% if query %}query={{ query }}&{% endif %}{% if selected_time_range %}time_range={{ selected_time_range }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}page={{ page_obj.next_page_number }}"
+           >></a>
+        </li>
+      {% endif %}
+    </ul>
+  </nav>
+</div>
+{% endif %}

@@ -1,0 +1,55 @@
+{% extends "user_account/user_base_account.html" %}
+{% block account %}
+<div>
+  <h4 class="mb-1">Payment History</h4>
+
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="card p-4 ">
+        <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+          {% if payment_history %}
+            {% for transaction in payment_history %}
+              <div class="border rounded p-3 mb-1">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="mb-1">
+                    {% if transaction.transaction_type == 'Credit' %}
+                      <span class="badge badge-success">Credit</span>
+                    {% elif transaction.transaction_type == 'Debit' %}
+                      <span class="badge badge-danger">Debit</span>
+                    {% elif transaction.transaction_type == 'Refund' %}
+                      <span class="badge badge-warning">Refund</span>
+                    {% else %}
+                      {{ transaction.transaction_type }}
+                    {% endif %}
+                  </h5>
+                  <h5 class="text-primary mb-0">₹{{ transaction.amount |floatformat:0 }}</h5>
+                </div>
+
+                <p ><strong>Payment Mode:</strong> {{ transaction.payment_mode|capfirst }}</p>
+                <p ><strong>Status:</strong>
+                  {% if transaction.status == 'completed' %}
+                    <span class="text-success">Completed</span>
+                  {% else %}
+                    <span class="text-muted">{{ transaction.status }}</span>
+                  {% endif %}
+                </p>
+                {% if transaction.order %}
+                  <p ><strong>Order ID:</strong> {{ transaction.order.tracking_no }}</p>
+                {% endif %}
+                <p ><strong>Description:</strong> {{ transaction.description }}</p>
+                <p class="text-muted mb-0"><strong>Date:</strong> {{ transaction.timestamp|date:"Y-m-d H:i A" }}</p>
+              </div>
+            {% endfor %}
+          {% else %}
+             <div class="text-center p-5 bg-light rounded shadow-sm">
+                <p class="p-5">No payments have been made yet.</p>
+            </div>
+          {% endif %}
+        </div><!-- End .card-body -->
+      </div><!-- End .card-dashboard -->
+    </div><!-- End .col-lg-12 -->
+  </div><!-- End .row -->
+</div>
+
+
+{% endblock account%}
