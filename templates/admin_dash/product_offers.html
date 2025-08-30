@@ -10,7 +10,7 @@
         <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                   <li class="nav-item w-100">
-                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'view_product_offers' %}" method="get" >
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'view-product-offers' %}" method="get" >
                       <input type="text" class="form-control" placeholder="Search product.." name="query" id="query" value="{{ query|default_if_none:'' }}">
                       <button class="btn btn-primary" type="submit">Search</button>
                     </form>
@@ -23,7 +23,7 @@
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-                <a class="btn btn-sm btn-warning" style="color : white;" href="{% url 'view_offers' %}">Back</a>
+                <a class="btn btn-sm btn-warning" style="color : white;" href="{% url 'view-offers' %}">Back</a>
                  <div class="table-responsive">
                 <table class="table">
                   <thead>
@@ -51,11 +51,11 @@
                             No Offers
                             {% endif %}
                         </td>
-                          <td><a class="btn btn-sm btn-info" style="color : white;" href="{% url 'update_product_offer' product.id%}">+ Add &amp; edit</a>
+                          <td><a class="btn btn-sm btn-info" style="color : white;" href="{% url 'update-product-offer' product.id%}">+ Add &amp; edit</a>
                           {% comment %} <td><a class="btn btn-sm btn-info" style="color : white;" href="{% url 'offers_for_product' product.id%}">+ Add &amp; edit</a> {% endcomment %}
                           </td>
                           {% if product.offer%}
-                          <td><a  class="btn btn-sm btn-danger" style="color : white;" href="{% url 'remove_product_offer' product.id%}">Remove</a>
+                          <td><a  class="btn btn-sm btn-danger" style="color : white;" href="{% url 'remove-product-offer' product.id%}">Remove</a>
                           </td>
                           {% else %}
                           <td>No offers</label>

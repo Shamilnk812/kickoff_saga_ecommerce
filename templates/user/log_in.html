@@ -22,7 +22,7 @@
 					<img src="{% static 'signup/images/reg-form-1.jpeg' %}" alt="">
 
 				</div>
-				<form action="{%url 'log_in'%}" method="POST">
+				<form action="{%url 'login'%}" method="POST">
 					{% csrf_token %}
 					<h3>Login Form</h3>
 					
@@ -44,7 +44,7 @@
 						<i class="zmdi zmdi-arrow-right"></i>
 					</button>
                     {% comment %} <h4 style="margin-top: 30px; margin-left: 20px;"><a href="" style="text-decoration: none;">Login with OTP </a> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="" style="text-decoration: none; ">Forgotte password</a></h4> {% endcomment %}
-                    <p style="margin-top: 20px; margin-left: 20px;">I don't have account ? <a href="{% url 'sign_up' %}">Create an Account</a></p>
+                    <p style="margin-top: 20px; margin-left: 20px;">I don't have account ? <a href="{% url 'signup' %}">Create an Account</a></p>
                     <p style="margin-top: 20px; margin-left: 100px;"><a href="{% url 'password-reset' %}" style="text-decoration:none;">Forgot password</a></p> 
 
 				</form>

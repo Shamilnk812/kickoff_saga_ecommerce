@@ -21,8 +21,8 @@
                             {% if address.message %}
                                 Message: {{ address.message }}
                             {% endif %}
-                    <a href="{% url 'edit_address' address.id %}">Edit <i class="icon-edit"></i></a></p>
-                    <a class="delete-address" data-url="{% url 'delete_user_address' address.id %}">Delete</a>
+                    <a href="{% url 'address-edit' address.id %}">Edit <i class="icon-edit"></i></a></p>
+                    <a class="delete-address" data-url="{% url 'address-delete' address.id %}">Delete</a>
                     
             
                 </div><!-- End .card-body -->

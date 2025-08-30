@@ -23,7 +23,7 @@
 					<img src="{% static 'signup/images/reg-form-1.jpeg' %}" alt="">
 
 				</div>
-				<form action="{%url 'admin_log_in'%}" method="POST">
+				<form action="{%url 'admin-login' %}" method="POST">
 					{% csrf_token %}
 					<h3>Admin Login</h3>
 					

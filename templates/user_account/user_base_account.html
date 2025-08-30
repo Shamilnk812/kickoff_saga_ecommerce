@@ -25,26 +25,24 @@
                         <ul class="nav nav-dashboard flex-column mb-3 mb-md-0" role="tablist">
                          
                             <li class="nav-item">
-                                <a class="nav-link" id="tab-account-link" href="{% url 'account_details' %}" >My Account</a>
+                                <a class="nav-link {% if request.resolver_match.url_name == 'account-details' %}active{% endif %}"  id="tab-account-link" href="{% url 'account-details' %}" >My Account</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link " id="tab-dashboard-link" href="{% url 'user_orders'%}">My Orders</a>
+                                <a class="nav-link {% if request.resolver_match.url_name == 'orders' %}active{% endif %}" id="tab-dashboard-link" href="{% url 'orders'%}">My Orders</a>
                             </li>
-                            {% comment %} <li class="nav-item">
-                                <a class="nav-link" id="tab-downloads-link" data-toggle="tab" href="#tab-downloads" role="tab" aria-controls="tab-downloads" aria-selected="false">Downloads</a>
-                            </li> {% endcomment %}
+                            
                             <li class="nav-item">
-                                <a class="nav-link" id="tab-address-link"  href="{% url 'user_wallet'%}" >Wallet &amp; Coupons</a>
+                                <a class="nav-link {% if request.resolver_match.url_name == 'wallet' %}active{% endif %}" id="tab-address-link"  href="{% url 'wallet'%}" >Wallet &amp; Coupons</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" id="tab-address-link"  href="{% url 'view_payment_history'%}" >Payment History</a>
+                                <a class="nav-link {% if request.resolver_match.url_name == 'transactions' %}active{% endif %}" id="tab-address-link"  href="{% url 'transactions'%}" >Payment History</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" id="tab-address-link"  href="{% url 'user_address'%}" >Adresses</a>
+                                <a class="nav-link {% if request.resolver_match.url_name == 'addresses' %}active{% endif %}" id="tab-address-link"  href="{% url 'addresses'%}" >Adresses</a>
                             </li>
                            
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'log_out'%}">Sign Out</a>
+                                <a class="nav-link" href="{% url 'logout'%}">Sign Out</a>
                             </li>
                         </ul>
                     </aside><!-- End .col-lg-3 -->

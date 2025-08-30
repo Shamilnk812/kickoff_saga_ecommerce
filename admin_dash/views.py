@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.db import transaction
 from django.db.models import Sum,Count,F, Q
 from django.utils import timezone
-from datetime import timedelta,datetime
+from datetime import timedelta,datetime,date
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse
 from .helpers import render_to_pdf
@@ -41,19 +41,19 @@ def admin_log_in(request) :
         password = request.POST.get('password')
         if username.strip()=='' or password.strip()=='':
             messages.error(request, 'Fields cannot be empty!')
-            return redirect('admin_log_in')
+            return redirect('admin-login')
         user = authenticate(username=username,password=password)
         if user is not None :
             if user.is_active :
                 if user.is_superuser :
                     login(request, user)
-                    return redirect('dash_board')
+                    return redirect('dashboard')
                 else:
                     messages.error(request, 'Sorry only admin is allowed to ') 
-                    return redirect('admin_log_in')   
+                    return redirect('admin-login')   
             else :
                 messages.warning(request, 'Your account has been blocked')   
-                return redirect('admin_log_in') 
+                return redirect('admin-login') 
         else :
             messages.error( request, 'Bad credentials')
         
@@ -61,19 +61,19 @@ def admin_log_in(request) :
 
 
 @never_cache
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def admin_logout(request) :
     if 'username' in request.session:
         del request.session['username'] 
     logout(request)
     messages.success(request, 'You are logged out !')
-    return redirect('admin_log_in')
+    return redirect('admin-login')
 
 
 
 # ------------------- User management ---------------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def user_management(request) :
     query = request.GET.get('query')
 
@@ -93,13 +93,13 @@ def user_management(request) :
     }
     return render(request, 'admin_dash/usermanage.html',context)
 
-def search_user(request) :
-    query = request.GET.get('query')
-    users = User.objects.filter(username__icontains=query)
-    return render(request, 'admin_dash/search_user.html',{'users':users})
+# def search_user(request) :
+#     query = request.GET.get('query')
+#     users = User.objects.filter(username__icontains=query)
+#     return render(request, 'admin_dash/search_user.html',{'users':users})
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def block_user(request, user_id):
     blocking_reason = request.POST.get('blocking_reason', '').strip()
 
@@ -107,34 +107,34 @@ def block_user(request, user_id):
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
         messages.warning('User data doesnot exist')
-        return redirect('user_management')
+        return redirect('user-management')
     
     if not blocking_reason:
             messages.warning(request, "Blocking reason is required.")
-            return redirect('user_management')
+            return redirect('user-management')
     if len(blocking_reason) < 10:
             messages.warning(request, "Blocking reason must be at least 10 characters. Please enter valid reason.")
-            return redirect('user_management')
+            return redirect('user-management')
     if blocking_reason.isdigit() or re.fullmatch(r'[^\w\s]+', blocking_reason):
             messages.warning(request, "Blocking reason must contain valid text, not just digits or special characters.")
-            return redirect('user_management')
+            return redirect('user-management')
      
     user.is_active = False
     user.save()
     # Send account block email
     send_block_email(user.email, user.username, blocking_reason)
     messages.success(request, f'{user.username} Account is blocked successfully')
-    return redirect('user_management')
+    return redirect('user-management')
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def unblock_user(request, user_id):
     try:
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
         messages.warning('User data doesnot exist')
-        return redirect('user_management')
+        return redirect('user-management')
     
     user.is_active = True
     user.save()
@@ -143,14 +143,14 @@ def unblock_user(request, user_id):
     send_account_unblock_email(user.email, user.username)
 
     messages.success(request, f'{user.username} Account is unblocked')
-    return redirect('user_management')
+    return redirect('user-management')
 
 
 
 
 #-------------------- Category Management -----------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def category_management(request) :
     query = request.GET.get('query')
     if query:     
@@ -168,14 +168,14 @@ def category_management(request) :
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def add_category(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
         if form.is_valid():
             form.save()
             messages.success(request, "Category added successfully ")
-            return redirect(category_management)
+            return redirect('category-management')
     else:
         form = CategoryForm()
 
@@ -183,7 +183,7 @@ def add_category(request):
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def update_category(request,category_id):
     category = get_object_or_404(Category, id=category_id)
 
@@ -193,7 +193,7 @@ def update_category(request,category_id):
             category_name = form.cleaned_data['name']
             form.save()
             messages.success(request, f'{category_name} Category updated successfully')
-            return redirect('category_management')
+            return redirect('category-management')
     else :
         form =   CategoryForm(instance=category)
         
@@ -201,24 +201,24 @@ def update_category(request,category_id):
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def category_delete(request, category_id) :
     category = get_object_or_404(Category, id=category_id)
     category.is_available = not category.is_available
     category.save()
     if category.is_available :
         messages.info(request, f'{category.name} Category is unblocked')
-        return redirect(category_management)
+        return redirect('category-management')
     else :
         messages.success(request, f'{category.name} Category is blocked')
-        return redirect(category_management)
+        return redirect('category-management')
     
 
 
 
 # --------------- Brand Management ---------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def brand_management(request) :
     query = request.GET.get('query')
     if query:
@@ -234,7 +234,7 @@ def brand_management(request) :
     return render(request, 'admin_dash/brand_management.html',context)
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def add_brand(request) :
     if request.method == 'POST' :
         form = BrandForm(request.POST)
@@ -242,7 +242,7 @@ def add_brand(request) :
             form.save()
             brand_name = form.cleaned_data['name']
             messages.success(request, f'{brand_name} new brand succcessfully added')
-            return redirect('brand_management')
+            return redirect('brand-management')
     else:
         form = BrandForm()
 
@@ -250,7 +250,7 @@ def add_brand(request) :
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def update_brand(request, brand_id) :
     brand = get_object_or_404(Brand, id=brand_id)
 
@@ -260,7 +260,7 @@ def update_brand(request, brand_id) :
             form.save()
             brand_name = form.cleaned_data['name']
             messages.success(request, f'{brand_name} is updated successfully.')
-            return redirect('brand_management')
+            return redirect('brand-management')
     else:
         form = BrandForm(instance=brand)
 
@@ -268,23 +268,23 @@ def update_brand(request, brand_id) :
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def delete_brand(request,brand_id):
     brand = get_object_or_404(Brand, id=brand_id)
     brand.is_available = not brand.is_available
     brand.save()
     if brand.is_available :
         messages.success(request, f"{brand.name} brand is available")
-        return redirect(brand_management)
+        return redirect('brand-management')
     else :
         messages.warning(request, f"{brand.name} Barnd is blocked ")
-        return redirect(brand_management)
+        return redirect('brand-management')
     
 
 
 # --------------- Product Management ---------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def product_management(request) :
     query = request.GET.get('query')
     if query:
@@ -300,7 +300,7 @@ def product_management(request) :
     return render(request, 'admin_dash/product_management.html',context)
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def add_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)  
@@ -308,14 +308,14 @@ def add_product(request):
             product_name = form.cleaned_data['name']
             form.save()
             messages.success(request, f"{product_name} New product added successfully.")
-            return redirect('product_management')
+            return redirect('product-management')
     else:
         form = ProductForm()  
 
     return render(request, 'admin_dash/add_product.html', {'form': form}) 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def update_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
@@ -325,7 +325,7 @@ def update_product(request, product_id):
             product_name = form.cleaned_data['name']
             form.save()            
             messages.success(request, f'{product_name} product is updated successfully.')
-            return redirect('product_management')
+            return redirect('product-management')
     else:
         form = ProductForm(instance=product)
 
@@ -334,51 +334,51 @@ def update_product(request, product_id):
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def product_delete(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     product.is_available = not product.is_available  
     product.save()
     if product.is_available :
         messages.success(request, f'{product.name} Product is available')
-        return redirect('product_management')
+        return redirect('product-management')
     else :
         messages.warning(request, f'{product.name} product is blocked')
-        return redirect('product_management')
+        return redirect('product-management')
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def publish_products(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
     except Product.DoesNotExist:
         messages.warning(request, 'product is not found')
-        return redirect('product_management')
+        return redirect('product-management')
     
     if product.status == 'published':
         messages.warning(request, f'{product.name} is already published.')
-        return redirect('product_management')
+        return redirect('product-management')
     
     if not Variants.objects.filter(product=product).exists():
         messages.warning(request, 'Please add product variant before publishing.')
-        return redirect('product_management')
+        return redirect('product-management')
         
     if not Images.objects.filter(product=product).exists():
         messages.warning(request, 'Please add product photos before publishing.')
-        return redirect('product_management')
+        return redirect('product-management')
     
     product.status = 'published'
     product.save()
     
     messages.success(request, f'{product.name} has been successfully published.')
-    return redirect('product_management')
+    return redirect('product-management')
     
 
 
 #  ---------------- Product variants ------------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def show_variants(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     image = Images.objects.filter(product=product)
@@ -393,7 +393,7 @@ def show_variants(request, product_id):
 
 
 # ----------- Upload product image with fixed size -----
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def add_image_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
@@ -420,7 +420,7 @@ def add_image_product(request, product_id):
             image.save()
 
             messages.success(request, 'Product Image added successfully')
-            return redirect('show_variants', product_id=product_id)
+            return redirect('show-variants', product_id=product_id)
 
     else:
         form = ImageForm()
@@ -428,17 +428,17 @@ def add_image_product(request, product_id):
     return render(request, 'admin_dash/add_image_product.html', {'form': form, 'product': product})
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def delete_product_image(request,img_id, product_id) :
     image = get_object_or_404(Images, id=img_id, product=product_id)
     image.delete()
     messages.success(request, 'Product Image Removed')
-    return redirect('show_variants', product_id=product_id)
+    return redirect('show-variants', product_id=product_id)
 
 
 #-----------Add product size variants ----------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def add_size_and_quantity(request, product_id) :
     product = get_object_or_404(Product, id=product_id)
 
@@ -449,13 +449,13 @@ def add_size_and_quantity(request, product_id) :
             variant.product = product
             variant.save()
             messages.success(request, 'New size and quantity is updated')
-            return redirect('show_variants',product_id=product_id)
+            return redirect('show-variants',product_id=product_id)
     else:
         form = ProductSizeVariantsForm()
     return render(request, 'admin_dash/add_size_quantity.html', {'form':form})
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def update_size_of_quantity(request, variant_id):
     variant = get_object_or_404(Variants, id=variant_id)
     if request.method == 'POST':
@@ -463,7 +463,7 @@ def update_size_of_quantity(request, variant_id):
         if form.is_valid():
             form.save()
             messages.success(request, f'{variant.product.name} product size variant updated successfully')
-            return redirect('show_variants',product_id=variant.product.id)
+            return redirect('show-variants',product_id=variant.product.id)
         
     else:
         form = ProductSizeVariantsForm(instance=variant, initial={'product': variant.product})
@@ -471,7 +471,7 @@ def update_size_of_quantity(request, variant_id):
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def block_product_size(request, variant_id, product_id) :
     variant = get_object_or_404(Variants, id=variant_id, product=product_id)
     if variant.is_available == True:
@@ -479,19 +479,19 @@ def block_product_size(request, variant_id, product_id) :
         variant.save()
         messages.success(request, f'product size {variant.size } is blocked.')
         product_id = variant.product.id
-        return redirect(reverse('show_variants', args=[product_id]))
+        return redirect(reverse('show-variants', args=[product_id]))
     else:
         variant.is_available = True
         variant.save()
         messages.success(request, f'product size {variant.size } is unblocked.')
         product_id = variant.product.id
-        return redirect(reverse('show_variants', args=[product_id]))
+        return redirect(reverse('show-variants', args=[product_id]))
 
 
     
 # ------------------ Orders Management ----------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def all_orders(request) :
     query = request.GET.get('query','').strip()
     print('query', query)
@@ -512,7 +512,7 @@ def all_orders(request) :
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def view_all_order_items(request):
     time_range = request.GET.get('time_range', '')
     status = request.GET.get('status', '')
@@ -533,7 +533,7 @@ def view_all_order_items(request):
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def view_single_order(request,ord_id):
     order = Order.objects.filter(id=ord_id).first()
     orderitems = OrderItem.objects.filter(order=order).order_by('-id')
@@ -566,7 +566,7 @@ def view_single_order(request,ord_id):
 
 #------------- Update order item status -------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def update_single_order_status(request, ord_id):
     if request.method == 'POST':
         item_id = request.POST.get('item_id').strip()
@@ -574,24 +574,24 @@ def update_single_order_status(request, ord_id):
         
         if not item_id or not new_status:
             messages.warning(request, "Item ID and status are required.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         
         if new_status not in STATUS_FLOW:
             messages.warning(request, "Invalid status selected. You can only update to a forward status.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         
         
         try:
             order = Order.objects.get(id=ord_id)
         except Order.DoesNotExist:
             messages.warning(request, "Something wrong. Order does not exist.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         
         try:
             order_item = OrderItem.objects.get(order=order, id=item_id)
         except OrderItem.DoesNotExist:
             messages.warning(request, "Order item not found.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         
         # prevent status to previous status
         current_status_index = STATUS_FLOW.index(order_item.status) if order_item.status in STATUS_FLOW else -1 
@@ -599,21 +599,24 @@ def update_single_order_status(request, ord_id):
 
         if new_status_index <= current_status_index:
             messages.warning(request, f"You cannot move status backward from '{order_item.status}' to '{new_status}'.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         
+        if new_status == "Delivered":
+            order_item.return_valid_until = date.today() + timedelta(days=7)
+
         order_item.status = new_status
         order_item.save()
         messages.success(request, f"Order item status updated to '{new_status}'.")
-        return redirect('view_single_order',ord_id=ord_id)
+        return redirect('view-single-order',ord_id=ord_id)
     
     messages.warning(request, "Invalid request method.")
-    return redirect('view_single_order', ord_id=ord_id)
+    return redirect('view-single-order', ord_id=ord_id)
 
 
 
 #------------ Manage return order -------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def manage_return_request(request, ord_id):
     if request.method == 'POST':
         action = request.POST.get('action', '').strip()
@@ -621,10 +624,10 @@ def manage_return_request(request, ord_id):
 
         if action not in ['accept_return', 'reject_return']:
             messages.warning(request, "Invalid action. Cannot perform this operation.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         if not item_id:
             messages.warning(request, 'Order item ID missing. Please try again.')
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
 
         try:
             with transaction.atomic():
@@ -633,7 +636,7 @@ def manage_return_request(request, ord_id):
 
                 if order_item.status != 'Return Requested':
                     messages.warning(request, 'Only delivered and return requested item can be managed for return.')
-                    return redirect('view_single_order', ord_id=ord_id)
+                    return redirect('view-single-order', ord_id=ord_id)
 
                 if action == 'accept_return':
                     # Update variant stock
@@ -669,13 +672,13 @@ def manage_return_request(request, ord_id):
                     order_item.save()
 
                     messages.success(request, f'{order_item.product.name} return request accepted.')
-                    return redirect('view_single_order', ord_id=ord_id)
+                    return redirect('view-single-order', ord_id=ord_id)
 
                 else:  # reject_return
                     order_item.status = 'Return Rejected'
                     order_item.save()
                     messages.warning(request, f'{order_item.product.name} return request rejected.')
-                    return redirect('view_single_order', ord_id=ord_id)
+                    return redirect('view-single-order', ord_id=ord_id)
 
         except Order.DoesNotExist:
             messages.warning(request, "Order not found.")
@@ -685,16 +688,16 @@ def manage_return_request(request, ord_id):
             print(f"Error during return request handling: {e}")
             messages.warning(request, "Something went wrong while processing the return request.")
 
-        return redirect('view_single_order', ord_id=ord_id)
+        return redirect('view-single-order', ord_id=ord_id)
 
     messages.warning(request, "Invalid request method.")
-    return redirect('view_single_order', ord_id=ord_id)
+    return redirect('view-single-order', ord_id=ord_id)
         
 
 
 # ----------------- Cancel single order item ------------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def cancel_single_order_by_admin(request, ord_id):
     if request.method == 'POST':
         cancel_reason = request.POST.get('cancel_reason','').strip()
@@ -702,16 +705,16 @@ def cancel_single_order_by_admin(request, ord_id):
 
         if not cancel_reason:
             messages.warning(request, "Cancel reason is required.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         if len(cancel_reason) < 10:
             messages.warning(request, "Cancel reason must be at least 10 characters. Please enter valid reason.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         if cancel_reason.isdigit() or re.fullmatch(r'[^\w\s]+', cancel_reason):
             messages.warning(request, "Cancel reason must contain valid text, not just digits or special characters.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         if not item_id:
             messages.warning(request, "Something went wrong with the order. Please try again later.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
 
         try:
             with transaction.atomic():
@@ -720,7 +723,7 @@ def cancel_single_order_by_admin(request, ord_id):
 
                 if order_item.status == 'Cancelled':
                     messages.warning(request, f'{order_item.product.name} is already cancelled.')
-                    return redirect('view_single_order', ord_id=ord_id)
+                    return redirect('view-single-order', ord_id=ord_id)
 
                 # Update stock
                 variant = Variants.objects.select_for_update().filter(product=order_item.product, size=order_item.size).first()
@@ -756,7 +759,7 @@ def cancel_single_order_by_admin(request, ord_id):
                 order_item.save()
                 
                 messages.success(request, f'{order_item.product.name} has been cancelled successfully.')
-                return redirect('view_single_order', ord_id=ord_id)
+                return redirect('view-single-order', ord_id=ord_id)
 
         except Order.DoesNotExist:
             messages.warning(request, "Order not found.")
@@ -766,29 +769,29 @@ def cancel_single_order_by_admin(request, ord_id):
             print(f" Error during single item cancellation: {e}")
             messages.error(request, "Something went wrong while cancelling the order item. Please try again.")
         
-        return redirect('view_single_order', ord_id=ord_id)
+        return redirect('view-single-order', ord_id=ord_id)
 
     messages.warning(request, "Invalid request method.")
-    return redirect('view_single_order', ord_id=ord_id)
+    return redirect('view-single-order', ord_id=ord_id)
 
 
 
 #-----------------------  Cancel all order ------------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def cancel_all_order_by_admin(request, ord_id):
     if request.method == 'POST':
         cancel_reason = request.POST.get('cancel_reason', '').strip()
 
         if not cancel_reason:
             messages.warning(request, "Cancel reason is required.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         if len(cancel_reason) < 10:
             messages.warning(request, "Cancel reason must be at least 10 characters. Please enter valid reason.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         if cancel_reason.isdigit() or re.fullmatch(r'[^\w\s]+', cancel_reason):
             messages.warning(request, "Cancel reason must contain valid text, not just digits or special characters.")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
 
         try:
             with transaction.atomic():
@@ -844,24 +847,24 @@ def cancel_all_order_by_admin(request, ord_id):
                     item.save()
                 
                 messages.success(request, f'This {order.tracking_no} all order is cancelled')
-                return redirect('view_single_order', ord_id=ord_id)
+                return redirect('view-single-order', ord_id=ord_id)
 
         except Order.DoesNotExist:
             messages.warning(request, "Something wrong. Order does not exist")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
         except Exception as e:
             print("Error during cancellation:", str(e))
             messages.error(request, f"Failed to cancel order. Please try again later")
-            return redirect('view_single_order', ord_id=ord_id)
+            return redirect('view-single-order', ord_id=ord_id)
 
     messages.warning(request, "Invalid request method.")
-    return redirect('view_single_order', ord_id=ord_id)
+    return redirect('view-single-order', ord_id=ord_id)
 
 
 
 # -------------------- Coupon Management ----------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def view_coupons(request) :
     query = request.GET.get('query', '').strip()
     if query:
@@ -873,7 +876,7 @@ def view_coupons(request) :
     return render(request, 'admin_dash/coupon_management.html', {'all_coupons':paginate_query})
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def add_coupon(request) :
     if request.method=='POST' :
         form = CouponForm(request.POST)
@@ -881,28 +884,29 @@ def add_coupon(request) :
             coupon_code = form.cleaned_data['coupon_code']
             form.save()
             messages.success(request, f'{coupon_code} new coupon is created successfully.')
-            return redirect('view_coupons')
+            return redirect('view-coupons')
     else:
         form = CouponForm()
     return render(request, 'admin_dash/add_coupon.html', {'form':form})
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def delete_coupon(request,c_id) :
     coupon = Coupon.objects.get(id=c_id) 
     if coupon.is_active==True :
         coupon.is_active=False
         coupon.save()
         messages.warning(request, 'Coupon is blocked')
-        return redirect('view_coupons')
+        return redirect('view-coupons')
     else :
         coupon.is_active=True
         coupon.save()
         messages.success(request, 'Coupon is Unblocked')
-        return redirect('view_coupons') 
+        return redirect('view-coupons') 
     
     
 # ------------------- Offer Management ------------------
+@login_required(login_url='admin-login')
 def view_offers(request) :
     query = request.GET.get('query', '').strip()
     if query:
@@ -913,6 +917,7 @@ def view_offers(request) :
     return render(request, 'admin_dash/offer_management.html',{'all_offers':paginate_query, 'query':query})
 
 
+@login_required(login_url='admin-login')
 def add_offer(request):
     if request.method == 'POST':
         form = OfferForm(request.POST)
@@ -920,13 +925,14 @@ def add_offer(request):
             offer_title = form.cleaned_data['title']
             form.save()
             messages.success(request, f"{offer_title} new offer added successfully.")
-            return redirect('view_offers')
+            return redirect('view-offers')
     else:
         form = OfferForm()
 
     return render(request, 'admin_dash/add_offer.html', {'form': form})
 
 
+@login_required(login_url='admin-login')
 def delete_offer(request, off_id):
     offer = get_object_or_404(Offer, id=off_id)
     offer.is_block = not offer.is_block
@@ -934,16 +940,16 @@ def delete_offer(request, off_id):
 
     if offer.is_block:
         messages.success(request, f"{offer.title} Offer is Blocked")
-        return redirect('view_offers')  
+        return redirect('view-offers')  
     else:
         messages.success(request, f"{offer.title} Offer is Unblocked")
-        return redirect('view_offers')  
+        return redirect('view-offers')  
     
 
 
 # --------------- Category offer ( apply offer for category )----------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def view_category_offers(request) :
     query = request.GET.get('query', '').strip()
     if query:
@@ -956,7 +962,7 @@ def view_category_offers(request) :
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def update_category_offer(request,c_id) :
     category = get_object_or_404(Category, id=c_id)
     if request.method == 'POST' :
@@ -969,14 +975,14 @@ def update_category_offer(request,c_id) :
                 product.offer = category.offer
                 product.save()
             messages.success(request, 'Offer applied for category')
-            return redirect(view_category_offers)
+            return redirect('view-category-offers')
     else :
         form = CategoryOfferForm(instance=category)
 
     return render(request, 'admin_dash/apply_offer_for_category.html', {'form':form,'category':category}) 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def remove_category_offer(request,c_id) :
     category = get_object_or_404(Category,id=c_id)
     category.offer = None
@@ -986,13 +992,13 @@ def remove_category_offer(request,c_id) :
         product.offer = None
         product.save()
     messages.success(request, 'Category offer removed !')
-    return redirect(view_category_offers)
+    return redirect('view-category-offers')
    
 
 
 # ---------------- Product Offer (apply offer for product ) ------------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def veiw_product_offers(request) :
     query = request.GET.get('query', '').strip()
     if query:
@@ -1004,7 +1010,7 @@ def veiw_product_offers(request) :
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def update_product_offer(request,p_id) :
     product = get_object_or_404(Product,id=p_id) 
     if request.method == 'POST' :
@@ -1012,25 +1018,25 @@ def update_product_offer(request,p_id) :
         if form.is_valid() :
             form.save()
             messages.success(request, 'Offer applied for Product')
-            return redirect(veiw_product_offers)
+            return redirect('view-product-offers')
     else :
         form = ProductOfferForm(instance=product)
     return render(request, 'admin_dash/apply_offer_for_product.html', {'form':form,'product':product})
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def remove_product_offer(request,p_id) :
     product = get_object_or_404(Product,id=p_id)
     product.offer = None
     product.save()
     messages.success(request, 'Product offer removed !')
-    return redirect(veiw_product_offers)
+    return redirect('view-product-offers')
 
 
 
 # --------------- Banner Management ----------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def banner_management(request):
     all_banner = Banner.objects.exclude(banner__isnull=True)
     context = {
@@ -1039,38 +1045,38 @@ def banner_management(request):
     return render(request, 'admin_dash/banner_management.html', context)
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def add_banner_image(request) :
     if request.method == 'POST' :
         form = BannerForm(request.POST, request.FILES)
         if form.is_valid() :  
             form.save()
             messages.success(request, "Banner successfully Added")
-            return redirect('banner_management')
+            return redirect('banner-management')
     else :
         form = BannerForm()  
     return render(request, 'admin_dash/add_banner.html',{'form':form})
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def delete_banner(request,b_id) :
     banner = get_object_or_404(Banner, id=b_id)
     if banner.is_available == True :
         banner.is_available = False
         banner.save()
         messages.success(request, 'Banner blocked !')
-        return redirect('banner_management')
+        return redirect('banner-management')
     else :
         banner.is_available = True
         banner.save()
         messages.success(request, 'Banner Unblocked ')
-        return redirect('banner_management')
+        return redirect('banner-management')
 
 
 
 #-------------------- Dash board data ----------------------
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def dash_board(request) :
     total_products   = Product.objects.filter(is_available=True).count()
     total_revenue = OrderItem.objects.filter(status='Delivered').aggregate(total=Sum(F('price') * F('quantity')))['total'] or 0
@@ -1143,7 +1149,7 @@ def get_sales_data(request, period):
 
 
 
-@login_required(login_url='admin_log_in')
+@login_required(login_url='admin-login')
 def view_sales_reports(request) :
    
     orders, total_amount_or_error = get_filtered_orders(
@@ -1155,7 +1161,7 @@ def view_sales_reports(request) :
 
     if orders is None:
         messages.warning(request, total_amount_or_error)
-        return redirect('view_sales_reports')
+        return redirect('view-sales-reports')
     
     paginate_data = paginate_queryset(orders, request, 10)
     

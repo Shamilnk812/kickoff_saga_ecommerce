@@ -12,7 +12,7 @@
           <div class="card">
               <div class="card-body">
                   <h4 class="card-title">Edit Product</h4>
-                        <form class="forms-sample" method="POST" action="{% url 'update_product' product.id %}">
+                        <form class="forms-sample" method="POST" action="{% url 'update-product' product.id %}">
                         {% csrf_token %}
                         <div class="form-group">
                             {{ form.name.label_tag }}
@@ -63,7 +63,7 @@
                         </div>
 
                         <button type="submit" class="btn btn-success">Save Changes</button>
-                        <a href="{% url 'product_management' %}" class="btn btn-dark">Cancel</a>
+                        <a href="{% url 'product-management' %}" class="btn btn-dark">Cancel</a>
                     </form>
                     
 

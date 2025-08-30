@@ -14,19 +14,19 @@ from django.contrib.auth.views import (
 
 urlpatterns = [
     path('',views.home, name='home'),
-    path('sign_up',views.sign_up, name='sign_up'),
-    path('log_in',views.log_in, name='log_in'),
-    path('log_out',views.log_out, name='log_out'),
-    path('send_otp',views.send_otp, name='send_otp'),
-    path('otp_verification',views.otp_verification, name='otp_verification'),
-    path('resend_otp', views.resend_otp, name='resend_otp'),
+    path('signup',views.sign_up, name='signup'),
+    path('login',views.log_in, name='login'),
+    path('logout',views.log_out, name='logout'),
+    path('send-otp',views.send_otp, name='send-otp'),
+    path('otp-verification',views.otp_verification, name='otp-verification'),
+    path('resend-otp', views.resend_otp, name='resend-otp'),
 
     path('password-reset/', PasswordResetView.as_view(template_name='user/password_reset.html',  form_class=CustomPasswordResetForm),name='password-reset'),
     path('password-reset/done/', PasswordResetDoneView.as_view(template_name='user/password_reset_done.html'),name='password_reset_done'),
     path('password-reset-confirm/<uidb64>/<token>/', PasswordResetConfirmView.as_view(template_name='user/password_reset_confirm.html', form_class=CustomSetPasswordForm),name='password_reset_confirm'),
     path('password-reset-complete/',PasswordResetCompleteView.as_view(template_name='user/password_reset_complete.html'),name='password_reset_complete'),
 
-    path('show_single_product/<int:product_id>/',views.show_single_product, name='show_single_product'),
+    path('single-product/<int:product_id>/',views.show_single_product, name='single-product'),
     path('store/', views.store, name='store'),
     
 ]

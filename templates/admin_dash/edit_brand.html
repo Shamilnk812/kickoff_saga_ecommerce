@@ -19,7 +19,7 @@
             <div class="card">
                 <div class="card-body">
                     <h4 class="card-title">Edit Brands</h4>
-                    <form class="forms-sample" method="POST" action="{% url 'update_brand' brand.id %}">
+                    <form class="forms-sample" method="POST" action="{% url 'update-brand' brand.id %}">
                         {% csrf_token %}
                          <div class="form-group">
                             {{ form.name.label_tag }}
@@ -34,7 +34,7 @@
                             <input type="text" name="brand_name" value="{{brand.name}}" class="form-control" id="id_name" placeholder="Enter Brand name">
                         </div> {% endcomment %}
                         <button type="submit" class="btn btn-success mr-2">Save Changes</button>
-                        <a href="{% url 'brand_management'%}" class="btn btn-dark">Cancel</a>
+                        <a href="{% url 'brand-management'%}" class="btn btn-dark">Cancel</a>
                     </form>
   
                     {% for message in messages %}

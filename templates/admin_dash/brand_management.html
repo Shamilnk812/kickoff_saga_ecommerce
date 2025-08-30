@@ -10,7 +10,7 @@
          <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                   <li class="nav-item w-100">
-                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'brand_management' %}" method="get" >
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'brand-management' %}" method="get" >
                       <input type="text" class="form-control" placeholder="Search brand" name="query" id="query" value="{{ query|default_if_none:'' }}">
                       <button class="btn btn-primary" type="submit">Search</button>
                     </form>
@@ -24,7 +24,7 @@
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-              <a class="badge badge-success" style="color : white;" href="{% url 'add_brand'%}">Add New Brand</a>
+              <a class="badge badge-success" style="color : white;" href="{% url 'add-brand'%}">Add New Brand</a>
 
               {% comment %} <p class="card-description"> Add class <code>.table</code>
               </p> {% endcomment %}
@@ -47,7 +47,7 @@
                         <td>{{forloop.counter}}</td>
                         <td>{{brand.name}}</td>
                       
-                        <td><a class="badge badge-warning" style="color : white;" href="{% url 'update_brand' brand.id%}"> Edit </a></td>
+                        <td><a class="badge badge-warning" style="color : white;" href="{% url 'update-brand' brand.id%}"> Edit </a></td>
                         <td style="color:{% if brand.is_available%}green{%else%}red{%endif%}"> 
                           {% if brand.is_available%}
                             Active
@@ -58,9 +58,9 @@
                         </td>
                         <td >
                            {% if brand.is_available %}
-                                <a  style="color: white;" class="block-brand btn btn-sm btn-danger" data-url="{% url 'block_brand' brand.id %}">Block</a>
+                                <a  style="color: white;" class="block-brand btn btn-sm btn-danger" data-url="{% url 'block-brand' brand.id %}">Block</a>
                             {% else %}
-                                <a  style="color: white;" class="unblock-brand btn btn-sm btn-success" data-url="{% url 'block_brand' brand.id %}">Unblock</a>
+                                <a  style="color: white;" class="unblock-brand btn btn-sm btn-success" data-url="{% url 'block-brand' brand.id %}">Unblock</a>
                             {% endif %}
                             
                         </td> 

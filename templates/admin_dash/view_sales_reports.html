@@ -12,7 +12,7 @@
            <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                   <li class="nav-item w-100">
-                     <form method="{% url 'view_sales_reports' %}" class="row ">
+                     <form method="{% url 'view-sales-reports' %}" class="row ">
                       <div >
                           <label>Start Date</label>
                           <input type="date" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
@@ -40,14 +40,14 @@
                 <div>
                   {% if orders%}
                   <button class="btn btn-info" 
-                  onclick="window.location='{% url 'download_pdf' %}?time_range={{ selected_time_range }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}'">
+                  onclick="window.location='{% url 'download-pdf' %}?time_range={{ selected_time_range }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}'">
                   Download PDF</button>
                   {% endif %}
               </div>
               
               </div>
                 <div  class="form-group text-right">
-                    <form method="get" action="{% url 'view_sales_reports' %}">
+                    <form method="get" action="{% url 'view-sales-reports' %}">
                     
                     <select name="time_range" id="time_range" class="form-control  col-sm-2 d-inline">
                      <option value="all" {% if selected_time_range == 'all' %}selected{% endif %}>All</option>

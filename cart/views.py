@@ -22,7 +22,7 @@ from django.views.decorators.cache import never_cache
 
 
 # ----------- Cart ------------
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def view_cart(request):
     if request.user.is_authenticated:
         carts = Cart.objects.filter(user=request.user)
@@ -93,11 +93,11 @@ def view_cart(request):
         return render(request, 'cart/view_cart.html', context)
 
     else:
-        return redirect('log_in')
+        return redirect('login')
 
 
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def remove_coupon(request): 
     applied_coupon_code = request.session.get('coupon_code')
     
@@ -121,6 +121,9 @@ def add_to_cart(request):
             product_id = data['pid']
             selected_size = data['size']
             product = Product.objects.get(id=product_id)
+           
+            if product_qty > 10:
+                return JsonResponse({'status': 'You can only order up to 10 items at a time.'}, status=400)
 
             try:
                 variant = Variants.objects.get(product=product, size=selected_size)
@@ -129,20 +132,20 @@ def add_to_cart(request):
                     # Check if the product already exists in the user's cart
                     existing_cart = Cart.objects.filter(user=request.user, product=product, size=selected_size)
                     if existing_cart.exists():
-                        return JsonResponse({'status': 'Product already in cart!'}, status=200)
+                        return JsonResponse({'status': 'Product already in cart!'}, status=400)
                     else:
                         Cart.objects.create(user=request.user, product=product, product_qty=product_qty, size=selected_size)
                         return JsonResponse({'status': 'Product added to cart'}, status=200)
                 else:
-                    return JsonResponse({'status': 'Product stock not available'}, status=200)
+                    return JsonResponse({'status': 'Product stock not available'}, status=400)
             except Variants.DoesNotExist:
-                return JsonResponse({'status': 'Selected size not available for this product'}, status=200)
+                return JsonResponse({'status': 'Selected size not available for this product'}, status=400)
             except Product.DoesNotExist:
-                return JsonResponse({'status': 'Product not found'}, status=200)
+                return JsonResponse({'status': 'Product not found'}, status=400)
         else:
-            return JsonResponse({'status': 'Login to add to cart'}, status=200)
+            return JsonResponse({'status': 'Please Login to add to cart'}, status=400)
     else:
-        return JsonResponse({'status': 'Invalid Access'}, status=200)
+        return JsonResponse({'status': 'Invalid Access'}, status=400)
     
 
 
@@ -219,6 +222,10 @@ def add_to_wishlist(request):
 def view_wishlist(request) :
     wishlist_items = Wishlist.objects.filter(user=request.user)
     wishlist_items = wishlist_items.annotate(total_quantity=Sum('product__variants__quantity'))
+    for item in wishlist_items:
+        sizes = item.product.variants_set.values_list("size", flat=True).distinct()
+        item.sizes_list = ",".join([str(size) for size in sizes])
+        
     return render(request, 'cart/wishlist.html',{'wishlist_items':wishlist_items})
 
 
@@ -226,7 +233,7 @@ def remove_wishlist_product(request,p_id) :
     product = get_object_or_404(Wishlist,product=p_id)
     product.delete()
     messages.success(request, 'Product removed from wishlist')
-    return HttpResponseRedirect(reverse('view_wishlist'))
+    return HttpResponseRedirect(reverse('wishlist'))
 
     
 # ----------------- Checkout -----------------
@@ -416,10 +423,8 @@ def place_order(request):
         Cart.objects.filter(user=user).delete()
         request.session.pop('shipping_type',None)
         request.session.pop('shipping_amount', None)
-        if coupon_obj:
-            UsedCoupon.objects.filter(used_coupon_code=coupon_obj.coupon_code, user=user).delete()
         request.session.pop('coupon_code', None)
-        return redirect('order_confirmation')
+        return redirect('order-confirmation')
     
 
         # return render(request, 'cart/order_confirmation.html')

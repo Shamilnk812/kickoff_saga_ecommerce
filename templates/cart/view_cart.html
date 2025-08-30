@@ -39,7 +39,7 @@
                             </thead>
 
                             <tbody>
-                             <form id="update-cart-form" method="post" action="{% url 'update_cart' %}">
+                             <form id="update-cart-form" method="post" action="{% url 'cart-update' %}">
                                 {% csrf_token %}
                                 {% for item in cart%}
                                 <tr class="cart-item" data-item-id="{{ item.id }}"   style="{% if not item.is_valid_cart_item %}opacity: 0.5; {% endif %}">
@@ -99,7 +99,7 @@
                                         {%endif%}
                                     </td>
                                   
-                                    <td><a href="{% url 'remove_cart_item' item.id %}" class="remove-item"><i class="icon-close"></i></a></td>
+                                    <td><a href="{% url 'cart-item-remove' item.id %}" class="remove-item"><i class="icon-close"></i></a></td>
 
                                 </tr>
                                 {% endfor %}
@@ -187,7 +187,7 @@
                                     </tr>
                                     <tr class="summary-shipping-row">
                                             <td style="background:violet" class="text-center">{{ applied_coupon|upper }} {{coupon_discount_percentage}}% OFF</td>
-                                            <td><a href="{% url 'remove_coupon' %}"><i class="icon-close"></i></a></td>
+                                            <td><a href="{% url 'coupon-remove' %}"><i class="icon-close"></i></a></td>
                                        </tr>
                                        <tr class="summary-shipping">
                                         <td>Coupon discount :&nbsp;</td>
@@ -297,7 +297,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 (parseFloat('{{ total_amount }}') + shippingCost).toFixed(2).replace(/\.?0*$/, "");
 
             // Send to server via AJAX
-            fetch("{% url 'update_shipping' %}", {
+            fetch("{% url 'shipping-update' %}", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

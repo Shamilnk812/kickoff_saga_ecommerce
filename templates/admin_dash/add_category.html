@@ -19,7 +19,7 @@
               {% for message in messages%}
               <p>{{message}}</p>
               {% endfor %}
-              <form class="forms-sample" action="{% url 'add_category'%}" method='POST'>
+              <form class="forms-sample" action="{% url 'add-category'%}" method='POST'>
                 {% csrf_token %}
 
                 <div class="form-group">
@@ -47,7 +47,7 @@
               </div>
                 
                    <button type="submit" class="btn btn-success mr-2"> Add </button>
-                   <a class="btn btn-dark" href="{% url 'category_management'%}">Cancel</a>
+                   <a class="btn btn-dark" href="{% url 'category-management'%}">Cancel</a>
               </form>
              
             </div>

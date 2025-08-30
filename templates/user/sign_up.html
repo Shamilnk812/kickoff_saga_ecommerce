@@ -22,7 +22,7 @@
 					<img src="{% static 'signup/images/reg-form-1.jpeg' %}" alt="">
 
 				</div>
-				<form action="{%url 'sign_up'%}" method="POST">
+				<form action="{%url 'signup'%}" method="POST">
 					{% csrf_token %}
 					<h3>Registration Form</h3>
                     <div class="form-wrapper">
@@ -55,74 +55,38 @@
                     
 					<div class="form-wrapper">
 						{{ form.password1 }}
-						{% comment %} {% if form.password1.errors %}
-							<p style="color: red;">{{ form.password1.errors.0 }}</p>
-						{% endif %} {% endcomment %}
 					</div>
 
 					<div class="form-wrapper">
 						{{ form.password2 }}
-						{% comment %} {% if form.password2.errors %}
-							<p style="color: red;">{{ form.password2.errors.0 }}</p>
-						{% endif %} {% endcomment %}
 					</div>
                     
-					 {% comment %} {% if form.non_field_errors %}
-						<ul>
-							{% for error in form.non_field_errors %}
-								<li style="color:red;">{{ error }}</li>
-							{% endfor %}
-						</ul>
-					{% endif %} {% endcomment %}
+					
 
 					{% if form.errors %}
-    <div style="margin: 10px 0; color: red;">
-        <ul>
-            {% for field, errors in form.errors.items %}
-                {% if forloop.first %}
-                    <li>{{ errors.0 }}</li>
-                {% endif %}
-            {% endfor %}
-        </ul>
-    </div>
-{% elif form.non_field_errors %}
-    <div style="margin: 10px 0; color: red;">
-        <ul>
-            <li>{{ form.non_field_errors.0 }}</li>
-        </ul>
-    </div>
-{% endif %}
+						<div style="margin: 10px 0; color: red;">
+							<ul>
+								{% for field, errors in form.errors.items %}
+									{% if forloop.first %}
+										<li>{{ errors.0 }}</li>
+									{% endif %}
+								{% endfor %}
+							</ul>
+						</div>
+					{% elif form.non_field_errors %}
+						<div style="margin: 10px 0; color: red;">
+							<ul>
+								<li>{{ form.non_field_errors.0 }}</li>
+							</ul>
+						</div>
+					{% endif %}
 
-					{% comment %} <div class="form-group">
-						<input type="text" name="first_name" placeholder="First Name" class="form-control" >
-						<input type="text" name="last_name" placeholder="Last Name" class="form-control" >
-					</div>
-					<div class="form-wrapper">
-						<input type="text" name="username" placeholder="Username" class="form-control" >
-						<i class="zmdi zmdi-account"></i>
-					</div>
-					<div class="form-wrapper">
-						<input type="email" name="email" placeholder="Email Address" class="form-control" >
-						
-						<i class="zmdi zmdi-email"></i>
-					</div>
 					
-					<div class="form-wrapper">
-						<input type="password" name="password1" placeholder="Password" class="form-control" >
-						<i class="zmdi zmdi-lock"></i>
-					</div>
-					<div class="form-wrapper">
-						<input type="password" name="password2" placeholder="Confirm Password" class="form-control" >
-						<i class="zmdi zmdi-lock"></i>
-					</div>
-					{% for message in messages %}
-                        <p class="text-danger">{{ message }}</p>
-                      {% endfor %} {% endcomment %}
 					<button type="submit">Register
 						<i class="zmdi zmdi-arrow-right"></i>
 					</button>
 
-					<p style="margin-top: 20px; margin-left: 20px;">I have already an account <a href="{% url 'log_in' %}"> Sign In</a></p>
+					<p style="margin-top: 20px; margin-left: 20px;">I have already an account <a href="{% url 'login' %}"> Sign In</a></p>
 
 				</form>
 			</div>

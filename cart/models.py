@@ -4,6 +4,7 @@ from admin_dash.models import Product,Variants
 from django.contrib.auth.models import User
 from .models import * 
 from decimal import Decimal
+from datetime import timedelta, date
 # Create your models here.
 
 
@@ -122,11 +123,19 @@ class OrderItem(models.Model) :
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='Pending')
     cancel_reason = models.TextField(null=True, blank=True)
     return_reason = models.TextField(null=True, blank=True)
+    return_valid_until = models.DateField(null=True, blank=True)
     cancelled_by = models.CharField(null=True, blank=True)
+    
     
     @property
     def total_price(self):
         return self.price * self.quantity
+    
+    @property
+    def can_return(self):
+        if self.return_valid_until:
+            return date.today() <= self.return_valid_until
+        return False
     
 
 

@@ -16,7 +16,7 @@
               {% for message in messages%}
               <p style="color:red;">{{message}}</p>
               {% endfor %}
-              <form class="forms-sample" action="{% url 'add_coupon'%}" method='POST'>
+              <form class="forms-sample" action="{% url 'add-coupon'%}" method='POST'>
                 {% csrf_token %}
 
                  <div class="form-group">
@@ -46,7 +46,7 @@
                 
               
                    <button type="submit" class="btn btn-success mr-2"> Add </button>
-                   <a class="btn btn-dark" href="{% url 'view_coupons'%}">Cancel</a>
+                   <a class="btn btn-dark" href="{% url 'view-coupons'%}">Cancel</a>
               </form>
              
             </div>

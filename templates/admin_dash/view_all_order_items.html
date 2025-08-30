@@ -15,7 +15,7 @@
           <div class="card">
             <div class="card-body">
                 <div  class="form-group text-right">
-                    <form method="get" action="{% url 'view_all_order_items' %}">
+                    <form method="get" action="{% url 'view-all-order-items' %}">
             <!-- Time Range Dropdown -->
             <select name="time_range" id="time_range" class="form-control col-sm-2 d-inline">
                 <option value="all" {% if selected_time_range == 'all' %}selected{% endif %}>All</option>
@@ -83,7 +83,7 @@
                         {% endif %}
                       </td>
                       <td >
-                         <a href="{% url 'view_single_order' item.order.id %}" class="btn bg-primary text-white">View</a>
+                         <a href="{% url 'view-single-order' item.order.id %}" class="btn bg-primary text-white">View</a>
                       </td>
                    </tr>
                     {%endfor%}   

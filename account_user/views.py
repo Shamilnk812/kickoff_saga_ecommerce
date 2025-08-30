@@ -21,7 +21,7 @@ from django.contrib.auth import logout
 
 # ------------ View all orders (a specific user's order) -------------
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def user_orders(request) :
     orders = Order.objects.filter(user=request.user).order_by('-id')
     context = {'orders':orders}
@@ -30,7 +30,7 @@ def user_orders(request) :
 
 
 #---------------- View single order details --------------
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def view_order(request,order_id) :
     order = Order.objects.filter(id=order_id, user=request.user).first()
     orderitems = OrderItem.objects.filter(order=order).order_by('id')
@@ -49,7 +49,7 @@ def view_order(request,order_id) :
 
 #--------------------- Cancel order ----------------------
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def cancel_order(request, order_id):
 
     if request.method == 'POST':    
@@ -57,13 +57,13 @@ def cancel_order(request, order_id):
 
         if not cancel_reason:
             messages.error(request, "Cancel reason is required.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         if len(cancel_reason) < 10:
             messages.error(request, "Cancel reason must be at least 10 characters.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         if cancel_reason.isdigit() or re.fullmatch(r'[^\w\s]+', cancel_reason):
             messages.error(request, "Cancel reason must contain valid text.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
 
        
         try:
@@ -76,7 +76,7 @@ def cancel_order(request, order_id):
 
                 if not cancellable_items.exists():
                     messages.error(request, "No items in this order are eligible for cancellation.")
-                    return redirect('view_order', order_id=order_id)
+                    return redirect('order-detail', order_id=order_id)
 
                 user_wallet, created = Wallet.objects.get_or_create(user=request.user, defaults={'wallet': 0})
 
@@ -119,14 +119,14 @@ def cancel_order(request, order_id):
                 
         except Exception as e:
             messages.error(request, f"An error occurred while canceling the order")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
 
         messages.success(request, 'Order canceled successfully.')
-        return redirect('view_order', order_id=order_id)
+        return redirect('order-detail', order_id=order_id)
     
 
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def cancel_single_item(request, order_id):
     if request.method == 'POST':
         cancel_reason = request.POST.get('cancel_reason', '').strip()
@@ -134,16 +134,16 @@ def cancel_single_item(request, order_id):
 
         if not cancel_reason:
             messages.error(request, "Cancel reason is required.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         if len(cancel_reason) < 10:
             messages.error(request, "Cancel reason must be at least 10 characters.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         if cancel_reason.isdigit() or re.fullmatch(r'[^\w\s]+', cancel_reason):
             messages.error(request, "Cancel reason must contain valid text.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         if not item_id:
             messages.error(request, "Something went wrong. Please try again later.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
 
         try:
             with transaction.atomic():
@@ -153,7 +153,7 @@ def cancel_single_item(request, order_id):
                 cancellable_statuses = ['Pending', 'Confirmed', 'Out for Shipping', 'Shipped', 'Out for Delivery']
                 if order_item.status not in cancellable_statuses:
                     messages.error(request, "You cannot cancel this item at its current status.")
-                    return redirect('view_order', order_id=order_id)
+                    return redirect('order-detail', order_id=order_id)
 
                 # Restore product variants 
                 item_variants = Variants.objects.select_for_update().filter(
@@ -190,7 +190,7 @@ def cancel_single_item(request, order_id):
                 order_item.save()
 
                 messages.success(request, "Item cancelled successfully. Refund processed if applicable.")
-                return redirect('view_order', order_id=order_id)
+                return redirect('order-detail', order_id=order_id)
 
         except Order.DoesNotExist:
             messages.error(request, "Order not found or doesn't belong to you.")
@@ -199,7 +199,7 @@ def cancel_single_item(request, order_id):
         except Exception as e:
             messages.error(request, "An unexpected error occurred during cancellation")
 
-        return redirect('view_order', order_id=order_id)
+        return redirect('order-detail', order_id=order_id)
     
 
        
@@ -207,7 +207,7 @@ def cancel_single_item(request, order_id):
 
 #--------------------- Return Order -------------------
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def return_single_item(request, order_id):
     if request.method == 'POST':
         item_id = request.POST.get('item_id')
@@ -215,28 +215,28 @@ def return_single_item(request, order_id):
         
         if not return_reason:
             messages.error(request, "Return reason is required.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         if len(return_reason) < 10:
             messages.error(request, "Return reason must be at least 10 characters. Please enter valid reason.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         if return_reason.isdigit() or re.fullmatch(r'[^\w\s]+', return_reason):
             messages.error(request, "Return reason must contain valid text, not just digits or special characters.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         if not item_id :
             messages.error(request, "somthing wrong with order. Please try again later")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         
         try:
             order = Order.objects.get(user=request.user,id=order_id)
         except Order.DoesNotExist:
             messages.error(request, "Order not found or does not belong to you.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         
         try:
             order_item = OrderItem.objects.get(order=order,id=item_id)
         except OrderItem.DoesNotExist:
             messages.error(request, "The item you are trying to cancel does not exist in your order.")
-            return redirect('view_order', order_id=order_id)
+            return redirect('order-detail', order_id=order_id)
         
         if order_item.status == 'Delivered':
             order_item.status = 'Return Requested'
@@ -246,14 +246,14 @@ def return_single_item(request, order_id):
         else:
              messages.error(request, f"This item cannot be returned because it is currently marked as '{order_item.status}'.")
         
-        return redirect('view_order', order_id=order_id)
+        return redirect('order-detail', order_id=order_id)
 
         
 
     
 # --------------------- View user wallet and coupons -------------------
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def user_wallet(request):
     coupons = Coupon.objects.filter(is_active=True) 
     try:
@@ -268,7 +268,7 @@ def user_wallet(request):
 
 # ----------------- User addresss management --------------
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def user_address(request) :
     new_address = Address.objects.filter(user=request.user).order_by('-id')
     context = {
@@ -277,7 +277,7 @@ def user_address(request) :
     return render(request, 'user_account/user_address.html',context)
 
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def edit_address(request,ad_id) :
     address = Address.objects.get(id=ad_id)
     context ={
@@ -287,7 +287,7 @@ def edit_address(request,ad_id) :
     return render(request, 'user_account/edit_address.html',context)
 
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def update_address(request,ad_id) :
     if request.method == 'POST' :
         fname = request.POST.get('fname')
@@ -302,19 +302,19 @@ def update_address(request,ad_id) :
 
         if fname.strip()=='' or lname.strip()=='' or email.strip()=='' or phone.strip()=='' or address.strip()=='' or city.strip()=='' or state.strip()=='' or country.strip()=='' or pincode.strip()=='' :
             messages.error(request, "Fields cannot be empty!")
-            return redirect('edit_address',ad_id=ad_id)
+            return redirect('address-edit',ad_id=ad_id)
         
         if not all(map(is_alpha, [fname, lname, city, state, country])):
             messages.error(request, "Name, city, state, and country must contain only alphabets!")
-            return redirect('edit_address', ad_id=ad_id)
+            return redirect('address-edit', ad_id=ad_id)
 
         if not is_valid_phone(phone):
             messages.error(request, "Enter a valid 10-digit mobile number!")
-            return redirect('edit_address', ad_id=ad_id)
+            return redirect('address-edit', ad_id=ad_id)
 
         if not is_valid_pincode(pincode):
             messages.error(request, "Enter a valid 6-digit pincode!")
-            return redirect('edit_address', ad_id=ad_id)
+            return redirect('address-edit', ad_id=ad_id)
 
         new_address = Address.objects.get(id=ad_id)
         new_address.fname = fname
@@ -328,21 +328,21 @@ def update_address(request,ad_id) :
         new_address.pincode = pincode
         new_address.save()
         messages.success(request, 'Your address has been updated successfully!')
-        return redirect('user_address')
+        return redirect('addresses')
   
     return render(request, 'user_account/edit_address.html')
 
 
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def delete_user_address(request, ad_id) :
     address = get_object_or_404(Address, id=ad_id) 
     address.delete()
     messages.success(request, "You address is deleted !")
-    return redirect('user_address')
+    return redirect('addresses')
    
 
-@login_required(login_url='log_in')
+@login_required(login_url='login')
 def account_details(request):
     if request.method == "POST":
         if 'update_info' in request.POST:  
@@ -351,7 +351,7 @@ def account_details(request):
             if user_form.is_valid():
                 user_form.save()
                 messages.success(request, 'User info updated.')
-                return redirect('account_details') 
+                return redirect('account-details') 
           
 
         elif 'change_password' in request.POST:
@@ -367,10 +367,10 @@ def account_details(request):
                     user.save()
                     logout(request)
                     messages.success(request, 'Password updated successfully. Please log in again.')
-                    return redirect(reverse('log_in'))
+                    return redirect(reverse('login'))
                 else:
                     messages.error(request, 'Your current password is incorrect')
-                    return redirect('account_details') 
+                    return redirect('account-details') 
                         
     else:
         user_form = UserUpdateForm(instance=request.user)
@@ -400,7 +400,7 @@ def generate_invoice(request, order_id, order_item_id):
     # Check if delivered
     if order_item.status != 'Delivered':
         messages.error(request, "Invoice can only be generated for delivered items.")
-        return redirect('view_order', order_id=order_id)
+        return redirect('order-detail', order_id=order_id)
         
     invoice_number = str(random.randint(100000, 999999))
     context = {
@@ -416,4 +416,4 @@ def generate_invoice(request, order_id, order_item_id):
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
     messages.error(request, 'Failed to generate the invoice. Please try agin later')
-    return redirect('view_order', order_id=order_id)
+    return redirect('order-detail', order_id=order_id)

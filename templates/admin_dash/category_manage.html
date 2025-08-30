@@ -12,7 +12,7 @@
          <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                   <li class="nav-item w-100">
-                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'category_management' %}" method="get" >
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'category-management' %}" method="get" >
                       <input type="text" class="form-control" placeholder="Search category" name="query" id="query" value="{{ query|default_if_none:'' }}">
                       <button class="btn btn-primary" type="submit">Search</button>
                     </form>
@@ -26,7 +26,7 @@
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_category' %}">Add New category</a>
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add-category' %}">Add New category</a>
 
               {% comment %} <p class="card-description"> Add class <code>.table</code>
               </p> {% endcomment %}
@@ -64,13 +64,13 @@
                         Inactive
                         {% endif %}
                       </td>
-                      <td><a class="btn btn-sm btn-warning" style="color : white;" href="{% url 'update_category' category.id%}"> Edit </a></td>
+                      <td><a class="btn btn-sm btn-warning" style="color : white;" href="{% url 'update-category' category.id%}"> Edit </a></td>
 
                       <td>
                         {% if category.is_available %}
-                                <a class="delete-category btn btn-sm btn-danger" data-url="{% url 'category_delete' category.id %}" style="color: white;">Block</a>
+                                <a class="delete-category btn btn-sm btn-danger" data-url="{% url 'category-delete' category.id %}" style="color: white;">Block</a>
                         {% else %}
-                              <a class="unblock-category btn btn-sm btn-success" data-url="{% url 'category_delete' category.id %}" style="color: white;">Unblock</a>
+                              <a class="unblock-category btn btn-sm btn-success" data-url="{% url 'category-delete' category.id %}" style="color: white;">Unblock</a>
                         {% endif %}
                     </td>
                   </tr>

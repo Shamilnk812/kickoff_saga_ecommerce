@@ -11,7 +11,7 @@
            <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                   <li class="nav-item w-100">
-                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'all_orders' %}" method="get" >
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'all-orders' %}" method="get" >
                       <input type="text" class="form-control" placeholder="Search order" name="query" id="query" value="{{ query|default_if_none:'' }}">
                       <button class="btn btn-primary" type="submit">Search</button>
                     </form>
@@ -23,7 +23,7 @@
         <div class="col-lg-12 grid-margin stretch-card">
           <div class="card">
             <div class="card-body">
-              <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'view_all_order_items' %}">View Order Items</a>
+              <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'view-all-order-items' %}">View Order Items</a>
               <div class="table-responsive">
                 <table class="table">
                   <thead>
@@ -49,7 +49,7 @@
                       <td>{{order.orderitem_set.count}}</td>
                       <td>₹{{order.total_price | stringformat:'d'}}</td>
                       <td >
-                         <a href="{% url 'view_single_order' order.id %}" class="btn bg-primary text-white">View 
+                         <a href="{% url 'view-single-order' order.id %}" class="btn bg-primary text-white">View 
                            {% if order.id in orders_with_return %}
                             <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
                           {% endif %}

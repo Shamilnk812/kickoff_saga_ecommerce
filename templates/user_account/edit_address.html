@@ -2,7 +2,7 @@
 {% block account %}
 <div class="container ">
 <div class="">
-    <form action="{% url 'update_address' address.id %}" method="POST">
+    <form action="{% url 'address-update' address.id %}" method="POST">
         {% csrf_token %}
     <div class="col-lg-9">
         <h2 class="checkout-title">Billing Details</h2><!-- End .checkout-title -->

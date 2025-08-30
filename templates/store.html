@@ -1,6 +1,8 @@
 {% extends "n.html" %}
 {% load static %}
 {% block content %}
+
+
  <main class="main"> 
     <div class="page-header text-center" style="background-image: url('{% static '/assets/images/neww_kick_head.jpeg' %}')">
         <div class="container">
@@ -95,19 +97,25 @@
                             <div class="col-6 col-md-4 col-lg-4 col-xl-3">
                                 <div class="product product-7 text-center">
                                     <figure class="product-media">
-                                        <span class="product-label label-new">New</span>
-                                        <a href="{% url 'show_single_product' product.id %}">
+                                        {% comment %} <span class="product-label label-new">New</span> {% endcomment %}
+                                        <a href="{% url 'single-product' product.id %}">
                                             <img src="{{ product.images_set.first.image.url }}" alt="Product image" class="product-image">
                                         </a>
 
                                         <div class="product-action-vertical">
-                                            {% comment %} <a href="#" class="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a> {% endcomment %}
+                                            <a href="#" onclick="addToWishlist({{ product.id }})" class="btn-product-icon btn-wishlist btn-expandable"><span>add to wishlist</span></a>
                                             {% comment %} <a href="popup/quickView.html" class="btn-product-icon btn-quickview" title="Quick view"><span>Quick view</span></a>
                                             <a href="#" class="btn-product-icon btn-compare" title="Compare"><span>Compare</span></a> {% endcomment %}
                                         </div><!-- End .product-action-vertical -->
 
                                         <div class="product-action">
-                                            {% comment %} <a href="#" class="btn-product btn-cart"><span>add to cart</span></a> {% endcomment %}
+                                            <a href="#" class="btn-product btn-cart"
+                                                data-id="{{ product.id }}"
+                                                data-name="{{ product.name }}"
+                                                data-image="{{ product.images_set.first.image.url }}"
+                                                data-sizes="{{ product.sizes_list }}">
+                                            <span>add to cart</span></a>
+
                                         </div><!-- End .product-action -->
                                     </figure><!-- End .product-media -->
 
@@ -115,15 +123,15 @@
                                         <div class="product-cat">
                                             <a href="#">{{product.categories}}</a>
                                         </div><!-- End .product-cat -->
-                                        <h3 class="product-title"><a href="{% url 'show_single_product' product.id %}">{{product.name}}</a></h3><!-- End .product-title -->
+                                        <h3 class="product-title"><a href="{% url 'single-product' product.id %}">{{product.name}}</a></h3><!-- End .product-title -->
                                         <div class="">
                                             {% comment %} {{product.price}} {% endcomment %}
                                             {% if product.offer and product.offer.is_valid %}
-                                                <del>{{ product.price|stringformat:'d'}}</del><br>
-                                                <span class="discounted-price" style="font-size:18px;color:#c96;">{{ product.discounted_price|stringformat:'d' }}</span>
+                                                <del>₹{{ product.price|stringformat:'d'}}</del><br>
+                                                <span class="discounted-price" style="font-size:18px;color:#c96;">₹{{ product.discounted_price|stringformat:'d' }}</span>
                                                
                                             {% else %}
-                                            <span style="font-size:18px; color:#c96;">{{ product.price|stringformat:'d' }}</span>
+                                            <span style="font-size:18px; color:#c96;">₹{{ product.price|stringformat:'d' }}</span>
                                             {% endif %}
                                            
                                         </div><!-- End .product-price -->
@@ -249,103 +257,19 @@
                                 <div class="widget-body">
                                     <div class="filter-items filter-items-count">
                                         {% for category in categories %}
-                                        <div class="filter-item">
-                                                <li style="list-style: none;"><a href="/store/?categories={{category.id}}">{{category.name}}</a></li>
-                                                 {% comment %} <span class="item-count">3</span> {% endcomment %}
-                                        </div><!-- End .filter-item -->
-                                        {% endfor %}
-
-                                        {% comment %} <div class="filter-item">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" class="custom-control-input" id="cat-2">
-                                                <label class="custom-control-label" for="cat-2">T-shirts</label>
-                                            </div><!-- End .custom-checkbox -->
-                                            <span class="item-count">0</span>
-                                        </div><!-- End .filter-item --> {% endcomment %}
-
+<li style="list-style: none;">
+    <a href="?categories={{category.id}}{% if brand_id %}&brand={{brand_id}}{% endif %}{% if min_price and max_price %}&min_price={{min_price}}&max_price={{max_price}}{% endif %}"
+       class="{% if cate_id|default:'' == category.id|stringformat:'s' %}text-primary font-weight-bold{% endif %}">
+       {{ category.name }}
+    </a>
+</li>
+{% endfor %}
                                     </div><!-- End .filter-items -->
                                 </div><!-- End .widget-body -->
                             </div><!-- End .collapse -->
                         </div><!-- End .widget -->
 
-                        {% comment %} <div class="widget widget-collapsible">
-                            <h3 class="widget-title">
-                                <a data-toggle="collapse" href="#widget-2" role="button" aria-expanded="true" aria-controls="widget-2">
-                                    Size
-                                </a>
-                            </h3><!-- End .widget-title -->
-
-                            <div class="collapse show" id="widget-2">
-                                <div class="widget-body">
-                                    <div class="filter-items">
-                                        <div class="filter-item">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" class="custom-control-input" id="size-1">
-                                                <label class="custom-control-label" for="size-1">XS</label>
-                                            </div><!-- End .custom-checkbox -->
-                                        </div><!-- End .filter-item -->
-
-                                        <div class="filter-item">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" class="custom-control-input" id="size-2">
-                                                <label class="custom-control-label" for="size-2">S</label>
-                                            </div><!-- End .custom-checkbox -->
-                                        </div><!-- End .filter-item -->
-
-                                        <div class="filter-item">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" class="custom-control-input" checked id="size-3">
-                                                <label class="custom-control-label" for="size-3">M</label>
-                                            </div><!-- End .custom-checkbox -->
-                                        </div><!-- End .filter-item -->
-
-                                        <div class="filter-item">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" class="custom-control-input" checked id="size-4">
-                                                <label class="custom-control-label" for="size-4">L</label>
-                                            </div><!-- End .custom-checkbox -->
-                                        </div><!-- End .filter-item -->
-
-                                        <div class="filter-item">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" class="custom-control-input" id="size-5">
-                                                <label class="custom-control-label" for="size-5">XL</label>
-                                            </div><!-- End .custom-checkbox -->
-                                        </div><!-- End .filter-item -->
-
-                                        <div class="filter-item">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" class="custom-control-input" id="size-6">
-                                                <label class="custom-control-label" for="size-6">XXL</label>
-                                            </div><!-- End .custom-checkbox -->
-                                        </div><!-- End .filter-item -->
-                                    </div><!-- End .filter-items -->
-                                </div><!-- End .widget-body -->
-                            </div><!-- End .collapse -->
-                        </div><!-- End .widget --> {% endcomment %}
-
-                        {% comment %} <div class="widget widget-collapsible">
-                            <h3 class="widget-title">
-                                <a data-toggle="collapse" href="#widget-3" role="button" aria-expanded="true" aria-controls="widget-3">
-                                    Colour
-                                </a>
-                            </h3><!-- End .widget-title -->
-
-                            <div class="collapse show" id="widget-3">
-                                <div class="widget-body">
-                                    <div class="filter-colors">
-                                        <a href="#" style="background: #b87145;"><span class="sr-only">Color Name</span></a>
-                                        <a href="#" style="background: #f0c04a;"><span class="sr-only">Color Name</span></a>
-                                        <a href="#" style="background: #333333;"><span class="sr-only">Color Name</span></a>
-                                        <a href="#" class="selected" style="background: #cc3333;"><span class="sr-only">Color Name</span></a>
-                                        <a href="#" style="background: #3399cc;"><span class="sr-only">Color Name</span></a>
-                                        <a href="#" style="background: #669933;"><span class="sr-only">Color Name</span></a>
-                                        <a href="#" style="background: #f2719c;"><span class="sr-only">Color Name</span></a>
-                                        <a href="#" style="background: #ebebeb;"><span class="sr-only">Color Name</span></a>
-                                    </div><!-- End .filter-colors -->
-                                </div><!-- End .widget-body -->
-                            </div><!-- End .collapse -->
-                        </div><!-- End .widget --> {% endcomment %}
+                        
 
                         <div class="widget widget-collapsible">
                             <h3 class="widget-title">
@@ -358,20 +282,15 @@
                                 <div class="widget-body">
                                     <div class="filter-items">
                                         <div class="filter-item">
-                                            {% for brand in brands%}
-                                            <div class="filter-item">
-                                                    <li style="list-style: none;"><a href="{% url 'store' %}?brand={{ brand.id }}">{{brand.name}}</a></li>
-                                                    
-                                            </div><!-- End .filter-item -->
-                                            {% endfor %}
+                                            {% for brand in brands %}
+<li style="list-style: none;">
+    <a href="?brand={{brand.id}}{% if cate_id %}&categories={{cate_id}}{% endif %}{% if min_price and max_price %}&min_price={{min_price}}&max_price={{max_price}}{% endif %}"
+       class="{% if brand_id|default:'' == brand.id|stringformat:'s' %}text-primary font-weight-bold{% endif %}">
+       {{ brand.name }}
+    </a>
+</li>
+{% endfor %}
                                         </div><!-- End .filter-item -->
-
-                                        {% comment %} <div class="filter-item">
-                                            <div class="custom-control custom-checkbox">
-                                                <input type="checkbox" class="custom-control-input" id="brand-2">
-                                                <label class="custom-control-label" for="brand-2">River Island</label>
-                                            </div><!-- End .custom-checkbox -->
-                                        </div><!-- End .filter-item --> {% endcomment %}
 
                                      </div><!-- End .filter-items -->
                                 </div><!-- End .widget-body -->
@@ -380,18 +299,58 @@
 
                         <div class="widget widget-collapsible">
                             <h3 class="widget-title">
-                                {% comment %} <a data-toggle="collapse" href="#widget-5" role="button" aria-expanded="true" aria-controls="widget-5">
+                                <a data-toggle="collapse" href="#widget-5" role="button" aria-expanded="true" aria-controls="widget-5">
                                     Price
-                                </a> {% endcomment %}
+                                </a> 
                             </h3><!-- End .widget-title -->
 
                             <div class="collapse show" id="widget-5">
                                 <div class="widget-body">
                                     <div class="filter-price">
-                                       
+                                                {% comment %} <div class="filter-price-text">
+                                              </div><!-- End .filter-price-text -->
+                                               {% endcomment %}
+                                                <!--price range  -->
+                                           <form method="GET" id="price-filter-form" style="padding:10px;" novalidate>
+                                                {% if cate_id %}
+                                                    <input type="hidden" name="categories" value="{{ cate_id }}">
+                                                {% endif %}
+                                                {% if brand_id %}
+                                                    <input type="hidden" name="brand" value="{{ brand_id }}">
+                                                {% endif %}
+                                                {% if query %}
+                                                    <input type="hidden" name="query" value="{{ query }}">
+                                                {% endif %}
 
-                                        <div id="price-slider"></div><!-- End #price-slider -->
-                                    </div><!-- End .filter-price -->
+                                                <div style="display:flex; flex-direction:column; gap:12px;">
+                                                    <!-- Min Price -->
+                                                    <div style="display:flex; flex-direction:column;">
+                                                        <label for="min_price" style="font-size:14px; font-weight:500; margin-bottom:4px;">
+                                                            Min Price
+                                                        </label>
+                                                        <input type="number" id="min_price" name="min_price" 
+                                                            value="{{ min_price|default:0 }}" min="0" max="9500" step="100" 
+                                                            style="padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; width:100%;">
+                                                    </div>
+
+                                                    <!-- Max Price -->
+                                                    <div style="display:flex; flex-direction:column;">
+                                                        <label for="max_price" style="font-size:14px; font-weight:500; margin-bottom:4px;">
+                                                            Max Price
+                                                        </label>
+                                                        <input type="number" id="max_price" name="max_price" 
+                                                            value="{{ max_price|default:10000 }}" min="200" step="100"
+                                                            style="padding:8px 10px; border:1px solid #ddd; border-radius:6px; font-size:14px; width:100%;">
+                                                    </div>
+
+                                                    <button type="submit" class="btn btn-sm btn-primary mt-1"
+                                                            >
+                                                        Apply Price
+                                                    </button>
+                                                </div>
+                                            </form>
+                                               
+                                             </div><!-- End .filter-price -->
                                 </div><!-- End .widget-body -->
                             </div><!-- End .collapse -->
                         </div><!-- End .widget -->
@@ -400,7 +359,314 @@
             </div><!-- End .row -->
         </div><!-- End .container -->
     </div><!-- End .page-content -->
-</main><!-- End .main -->
 
+
+    <div class="modal fade" id="addToCartModal" tabindex="-1" role="dialog" aria-labelledby="addToCartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addToCartModalLabel">Add to Cart</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="addToCartContent" class="modal-product">
+                                <!-- Product details will be dynamically inserted here -->
+                            </div>
+                            <div class="details-filter-row details-row-size">
+                                <label for="size">Size:</label>
+                                <select name="size" id="size" class="form-control">
+                                    <option value="" selected="selected">Select a size</option>
+                                    <!-- sizes will be inserted dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="addToCart()">Add to Cart</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+</main><!-- End .main -->
+  {% block scripts %}
+    
+   
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+     function addToWishlist(productId) {
+             event.preventDefault(); 
+            // Make an AJAX request to your add_to_wishlist view
+            $.ajax({
+                url: '{% url "wishlist-add" %}',  // Update this with your actual URL
+                type: 'POST',
+                data: {
+                    'product_id': productId,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'  // Include CSRF token for Django
+                },
+                success: function(response) {
+
+                    if (response.message) {
+                        console.log('response ',response.message)
+                        // Update wishlist count manually
+                        let wishlistCountElement = document.getElementById("wishlist-count");
+                        let currentCount = parseInt(wishlistCountElement?.innerText || 0);
+                        wishlistCountElement.innerText = currentCount + 1; 
+
+                        wishlistCountElement.style.display = "inline-block";
+
+                      
+                        const alertConfig = {
+                            icon: 'success',
+                            title: 'Success',
+                            text: response.message,
+                            customContainerClass: 'background-color: #28a745; color: white;',
+                        };
+                        Swal.fire(alertConfig);
+                        
+                    } else {
+                        const alertConfig = {
+                            icon: 'warning',
+                            title: 'Warning',
+                            text: response.error,
+                            customContainerClass: 'background-color: #FF5733; color: white;',
+                        };
+                        Swal.fire(alertConfig);
+                    }
+                },
+                error: function(error) {
+                    const alertConfig = {
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An unexpected error occurred',
+                        customContainerClass: 'background-color: #FF5733; color: white;',
+                    };
+                    Swal.fire(alertConfig);
+                }
+            });
+        }
+
+
+
+
+         $(document).on("click", ".btn-cart", function (e) {
+            e.preventDefault();
+
+            console.log('cart button clicked')
+            const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
+            let name = $(this).data("name");
+            let imageUrl = $(this).data("image");
+            let productId = $(this).data("id");
+            let sizes = $(this).data("sizes").split(",");
+
+            if (!isAuthenticated) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Please login',
+                        text: 'You must be logged in to add items to your cart.',
+                    });
+                    return;
+            }
+
+            // Build content dynamically
+            let modalContent = `
+                <h3 class="product-title">${name}</h3>
+                <img src="${imageUrl}" alt="${name}" style="width:100px;height:auto;">
+                <input type="hidden" value="${productId}" id="pid">
+                
+                <div class="details-filter-row details-row-size">
+                    <label for="qty">Qty:</label>
+                    <div class="product-details-quantity">
+                        <input type="number" id="txtQty" name="qty" class="form-control" value="1" min="1" max="10" step="1" required>
+                    </div>
+                </div>
+            `;
+
+            // Insert product info
+            $('#addToCartContent').html(modalContent);
+
+            // Insert sizes dynamically
+            let sizeSelect = $("#size");
+            sizeSelect.empty();
+            sizeSelect.append(`<option value="">Select a size</option>`);
+            sizes.forEach(size => {
+                sizeSelect.append(`<option value="${size}">${size}</option>`);
+            });
+
+            // Show modal
+            $('#addToCartModal').modal('show');
+        });
+
+
+
+    function addToCart() {
+        var productId = $('#pid').val();
+        var size = $('#size').val();
+        var quantity = $('#txtQty').val(); 
+
+
+        if (!size || quantity <= 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select a size and enter a valid quantity.',
+                customContainerClass: 'background-color: #FF5733; color: white;',
+            });
+            return;
+        }
+
+        if(quantity > 10){
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'You can only order up to 10 items at a time.',
+                customContainerClass: 'background-color: #FF5733; color: white;',
+            });
+            return;
+        }
+
+        var postObj = {
+            product_qty: quantity,
+            pid: productId,
+            size: size,
+        };
+
+
+        fetch("{% url 'cart-add' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify(postObj),
+        }).then(response => {
+            return response.json();
+        }).then(data => {
+            console.log("Response Data:", data);
+
+            let alertConfig = {
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while adding the product to the cart.',
+                customContainerClass: 'background-color: #FF5733; color: white;',
+            };
+
+            if (data.status === 'Product added to cart') {
+
+                let cartItemCount = document.getElementById("cart-items-count");
+                let currentCount = parseInt(cartItemCount?.innerText || 0);
+                cartItemCount.innerText = currentCount + 1; 
+
+                alertConfig = {
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Product added to the cart successfully!',
+                    customContainerClass: 'background-color: #28a745; color: white;',
+                };
+            } else if (data.status === 'Product already in cart!') {
+                alertConfig = {
+                    icon: 'info',
+                    title: 'Info',
+                    text: 'Product is already in the cart.',
+                    customContainerClass: 'background-color: #007bff; color: white;',
+                };
+            } else if (data.status === 'Product stock not available' || data.status === 'Selected size not available for this product' || data.status === 'Product not found') {
+                alertConfig = {
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.status,
+                    customContainerClass: 'background-color: #FF5733; color: white;',
+                };
+            }else if(data.status === 'Please Login to add to cart'){
+                alertConfig = {
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.status,
+                    customContainerClass: 'background-color: #FF5733; color: white;',
+                };
+
+            }
+
+            Swal.fire(alertConfig);
+
+            // Close the modal
+            $('#addToCartModal').modal('hide');
+        }).catch(error => {
+            console.error("Error:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An unexpected error occurred.',
+                customContainerClass: 'background-color: #FF5733; color: white;',
+            });
+        });
+    }
+
+
+    document.getElementById("price-filter-form").addEventListener("submit", function(event) {
+    const minPrice = parseFloat(document.getElementById("min_price").value);
+    const maxPrice = parseFloat(document.getElementById("max_price").value);
+
+    
+    if (isNaN(minPrice) || minPrice < 0) {
+        event.preventDefault(); 
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Minimum Amount',
+            text: 'Please enter a valid positive number for Min Price.',
+        });
+        return;
+        
+       
+    }
+
+    if (isNaN(maxPrice) || maxPrice < 0) {
+        event.preventDefault(); 
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Maximum Amount',
+            text: 'Please enter a valid positive number for Maximum Price.',
+        });
+        return;
+        
+    }
+
+   
+    if (minPrice >= maxPrice) {
+        event.preventDefault(); 
+        Swal.fire({
+            icon: 'warning',
+            title: 'Invalid Min Price',
+            text: 'Min Price must be less than Max Price.',
+        });
+        return;
+    }
+});
+
+
+{% if messages %}
+{% for message in messages %}
+    Swal.fire({
+        icon: "{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% elif message.tags == 'info' %}info{% endif %}",
+        title: "{{ message.tags }}",
+        text: "{{ message }}",
+    });
+{% endfor %}
+{% endif %}
+    
+</script>
+
+
+ {% endblock scripts %}
 
 {% endblock content %}

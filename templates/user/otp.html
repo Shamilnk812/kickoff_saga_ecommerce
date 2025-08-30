@@ -19,7 +19,7 @@
         <div class="image-holder">
             <img src="{% static 'signup/images/reg-form-1.jpeg' %}" alt="">
         </div>
-        <form action="{% url 'otp_verification'%}" method="POST">
+        <form action="{% url 'otp-verification'%}" method="POST">
             {% csrf_token %}
             <h3>OTP verification</h3>
             <p style="margin-top: 10px;">Please check your email:</p>
@@ -38,7 +38,7 @@
 
             <button type="submit">Verify <i class="zmdi zmdi-arrow-right"></i></button>
                 <!-- Resend OTP button -->
-            <button type="submit" id="resendButton" style="display: none;"><a href="{% url 'resend_otp' %} " style="text-decoration: none; color: white;">Resend OTP</a> </button>
+            <button type="submit" id="resendButton" style="display: none;"><a href="{% url 'resend-otp' %} " style="text-decoration: none; color: white;">Resend OTP</a> </button>
             {% for message in messages %}
             <p>{{message}}</p>
             {% endfor %}

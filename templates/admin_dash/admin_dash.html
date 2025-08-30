@@ -11,7 +11,7 @@
       <ol class="breadcrumb">
        
         <li class="nav-item w-100">
-          <a class="btn btn-info" href="{% url 'view_sales_reports'%}">View Sales reports</a>
+          <a class="btn btn-info" href="{% url 'view-sales-reports'%}">View Sales reports</a>
         </li>
       </ol>
     </nav>
@@ -253,7 +253,7 @@
   
   function SalesPortfolio(period) {
       
-       fetch(`/admin_dash/get_sales_data/${period}/`)    
+       fetch(`/admin-dash/get-sales-data/${period}/`)    
        //fetch(/admin_dash/get_sales_data/${period}/) 
       .then(response => {
          

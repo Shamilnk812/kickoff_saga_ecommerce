@@ -9,7 +9,7 @@
          <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                   <li class="nav-item w-100">
-                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'view_coupons' %}" method="get" >
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'view-coupons' %}" method="get" >
                       <input type="text" class="form-control" placeholder="Search coupon.." name="query" id="query" value="{{ query|default_if_none:'' }}">
                       <button class="btn btn-primary" type="submit">Search</button>
                     </form>
@@ -22,7 +22,7 @@
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_coupon' %}">Add New Coupon</a>
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add-coupon' %}">Add New Coupon</a>
               <div class="table-responsive">
                 <table class="table">
                   <thead>
@@ -45,10 +45,10 @@
                           <td>{{coupon.discount_percentage}}%</td>
                           {% if not coupon.is_active%}
                             <td class="text-danger"> Inactive</td>
-                            <td><a class="unblock-coupon btn btn-sm btn-success" data-url="{% url 'delete_coupon' coupon.id %}" style="color: white;"> Unblock</a></td>
+                            <td><a class="unblock-coupon btn btn-sm btn-success" data-url="{% url 'delete-coupon' coupon.id %}" style="color: white;"> Unblock</a></td>
                           {% else %}
                             <td class="text-success"> Active</td>
-                            <td><a class="delete-coupon btn btn-sm btn-danger" data-url="{% url 'delete_coupon' coupon.id %}" style="color: white;"> Block</a></td>
+                            <td><a class="delete-coupon btn btn-sm btn-danger" data-url="{% url 'delete-coupon' coupon.id %}" style="color: white;"> Block</a></td>
                           {% endif %}
 
                       </tr>

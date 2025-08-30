@@ -136,8 +136,8 @@
                 {% if order.coupon_discount_amount > 0 %}
                     <p><strong>Coupon Discount:</strong> ₹{{ order.coupon_discount_amount }}</p>
                 {% endif %}
-                {% if order.offer_discount_amount > 0 %}
-                    <p><strong>Offer Discount:</strong> ₹{{ order.offer_discount_amount }}</p>
+                {% if order_item.offer_saved_amount > 0 %}
+                    <p><strong>Offer Discount:</strong> ₹{{ order_item.offer_saved_amount }}</p>
                 {% endif %}
             </div>
 

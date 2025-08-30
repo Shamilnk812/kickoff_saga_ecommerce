@@ -17,7 +17,7 @@
             <div class="card-body">
               <h4 class="card-title">Apply Offer</h4>
             
-              <form class="forms-sample" action="{% url 'update_category_offer' category.id%}" method='POST'>
+              <form class="forms-sample" action="{% url 'update-category-offer' category.id%}" method='POST'>
                 {% csrf_token %}
                     <div class="form-group">
                         {{ form.offer.label_tag }}
@@ -28,7 +28,7 @@
                     </div>
           
                    <button type="submit" class="btn btn-success mr-2">Apply</button>
-                   <a class="btn btn-dark" href="{% url 'view_category_offers'%}">Cancel</a>
+                   <a class="btn btn-dark" href="{% url 'view-category-offers'%}">Cancel</a>
               </form>
              
             </div>

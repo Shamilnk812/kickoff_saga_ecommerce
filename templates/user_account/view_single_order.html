@@ -7,7 +7,7 @@
             <div class="card shadow">
                 <div class="card-header">
                     <h4 class="text-center p-3">Order View</h4>
-                    <a href="{% url 'user_orders' %}" class="btn btn-warning float-end">&#8592;&nbsp;Back</a>
+                    <a href="{% url 'orders' %}" class="btn btn-warning float-end">&#8592;&nbsp;Back</a>
                 </div>
 
                 <div class="card-body">
@@ -67,7 +67,7 @@
                                 
                                 <td>
                                   {%if item.status == 'Delivered'%}
-                                    <span ><a href="{% url 'download_invoice' item.order.id item.id%} ">Download</a></span>
+                                    <span ><a href="{% url 'order-invoice' item.order.id item.id%} ">Download</a></span>
                                   {%else%}
                                     <span class="text-muted" style="text-decoration: line-through;">Download</span>
                                   {%endif%}
@@ -77,10 +77,13 @@
 
                                 <td>
                                   
-                                    {% if item.status == "Delivered" %}
-                                        <a class="btn btn-sm btn-warning" data-toggle="modal" data-target="#returnModal{{ item.id }}">Return</a>
-                                    {% elif item.status == "Cancelled" or item.status == "Return Requested" or item.status == "Return Rejected" or item.status == "Returned"%}
+                                    {% if item.status == "Delivered" and item.can_return %}
+                                      <a class="btn btn-sm btn-warning" data-toggle="modal" data-target="#returnModal{{ item.id }}">Return</a>
+                                    {% elif item.status == "Delivered" and not item.can_return%}
                                       <span class="text-muted">No Action</span>
+                                    {% elif item.status == "Cancelled" or item.status == "Return Requested" or item.status == "Return Rejected" or item.status == "Returned" %}
+                                      <span class="text-muted">No Action</span>
+                                    
                                     {% else %}
                                       <a  class="btn btn-sm btn-danger" style="color:white" data-toggle="modal"  data-target="#cancelModal{{ item.id }}">Cancel</a>
                                     {% endif %}
@@ -138,7 +141,7 @@
           </div>
 
           <div class="modal-body p-4">
-            <form method="post" action="{% url 'cancel_single_item' order.id %}">
+            <form method="post" action="{% url 'order-cancel-item' order.id %}">
               {% csrf_token %}
               <div class="form-group">
                 <label for="cancelReason{{ item.id }}">Reason for Cancellation:</label>
@@ -170,7 +173,7 @@
           </div>
 
           <div class="modal-body p-4">
-            <form method="post" action="{% url 'return_single_item' order.id %}" >
+            <form method="post" action="{% url 'order-return-item' order.id %}" >
               {% csrf_token %}
               <div class="form-group">
                 <label for="returnReason{{ item.id }}">Reason for Return:</label>
@@ -202,7 +205,7 @@
       </div>
 
       <div class="modal-body p-4">
-        <form method="post" action="{% url 'cancel_order' order.id %}">
+        <form method="post" action="{% url 'order-cancel' order.id %}">
           {% csrf_token %}
           <div class="form-group">
             <label for="cancelAllReason">Reason for Cancellation:</label>

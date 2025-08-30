@@ -102,20 +102,20 @@
                             </form>
                         </div><!-- End .header-search -->
                         {% if request.user.is_authenticated %}
-                        <a href="{% url 'account_details'%}" class="wishlist-link">
+                        <a href="{% url 'account-details'%}" class="wishlist-link">
                             <i class="icon-user"></i>
                         </a>
-                        <a href="{% url 'view_wishlist'%}" class="wishlist-link">
+                        <a href="{% url 'wishlist'%}" class="wishlist-link">
                             <i class="icon-heart-o"></i>
-                             {% if wishlist_item_count > 0 %}
-                                <span class="cart-count" style="font-size:14px; color:white; background:#c66; padding:4px; border-radius:50%;">{{ wishlist_item_count }}</span>
-                            {% endif %}
+                             {% comment %} {% if wishlist_item_count > 0 %} {% endcomment %}
+                                <span id="wishlist-count" style="font-size:14px; color:white; background:#c66; padding:4px; border-radius:50%; {% if wishlist_item_count == 0 %} display:none; {% endif %}">{{ wishlist_item_count }}</span>
+                            {% comment %} {% endif %} {% endcomment %}
                         </a> 
                         {% else %}
-                        <a href="{% url 'log_in'%}" class="wishlist-link">
+                        <a href="{% url 'login'%}" class="wishlist-link">
                             <i class="icon-user"></i>
                         </a>
-                        <a href="{% url 'log_in'%}" class="wishlist-link">
+                        <a href="{% url 'login'%}" class="wishlist-link">
                             <i class="icon-heart-o"></i>
                          
                         </a> 
@@ -125,9 +125,9 @@
                             <a href="{% url 'view_cart' %}" class="dropdown-toggle" role="button" >
                                 <i class="icon-shopping-cart"></i>
                                 
-                                 {% if cart_item_count > 0 %}
-                                    <span class="cart-count">{{ cart_item_count }}</span>
-                                {% endif %}
+                                 {% comment %} {% if cart_item_count > 0 %} {% endcomment %}
+                                    <span id="cart-items-count" style="font-size:14px; color:white; background:#c66; padding:4px; border-radius:50%; {% if cart_item_count == 0 %} display:none; {% endif %}" >{{ cart_item_count }}</span>
+                                {% comment %} {% endif %} {% endcomment %}
                             </a>
 
                             
@@ -668,18 +668,30 @@
                                 <div class="col-6 col-md-4 col-lg-3">
                                     <div class="product product-2">
                                         <figure class="product-media">
-                                            <a href="{% url 'show_single_product' product.id %}">
+                                            <a href="{% url 'single-product' product.id %}">
                                                 <img src="{{ product.images_set.first.image.url }}" alt="Product image" class="product-image">
                                                 <img src="{{ product.images_set.first.image.url }}" alt="Product image" class="product-image-hover">
                                             </a>
 
                                             <div class="product-action-vertical">
-                                                {% comment %} <a href="#" class="btn-product-icon btn-wishlist" title="Add to wishlist"><span>add to wishlist</span></a> {% endcomment %}
+                                                <a href="#" onclick="addToWishlist({{ product.id }})" class="btn-product-icon btn-wishlist" title="Add to wishlist"><span>add to wishlist</span></a> 
                                             </div><!-- End .product-action -->
 
+                                            {% comment %} <div class="product-action product-action-transparent">
+                                               <a href="#" onclick="showAddToCartModal('{{ product.name }}', '{{ product.images_set.first.image.url }}', '{{ product.id }}', )" class="btn-product btn-cart"><span>add to cart</span></a> 
+                                            </div><!-- End .product-action --> {% endcomment %}
+
                                             <div class="product-action product-action-transparent">
-                                                {% comment %} <a href="#" class="btn-product btn-cart"><span>add to cart</span></a> {% endcomment %}
-                                            </div><!-- End .product-action -->
+                                            <a href="#" 
+                                                class="btn-product btn-cart"
+                                                data-id="{{ product.id }}"
+                                                data-name="{{ product.name }}"
+                                                data-image="{{ product.images_set.first.image.url }}"
+                                                data-sizes="{{ product.sizes_list }}">
+                                                <span>add to cart</span>
+                                            </a>
+                                        </div>
+
                                         </figure><!-- End .product-media -->
 
                                         <div class="product-body">
@@ -687,14 +699,14 @@
                                                 {% comment %} <a href="#">Handbags</a> {% endcomment %}
                                                 <p>{{product.categories}}</p>
                                             </div><!-- End .product-cat -->
-                                            <h3 class="product-title"><a href="{% url 'show_single_product' product.id %}">{{product.name}}</a></h3><!-- End .product-title -->
+                                            <h3 class="product-title"><a href="{% url 'single-product' product.id %}">{{product.name}}</a></h3><!-- End .product-title -->
                                             <div >
                                                 {% if product.offer and product.offer.is_valid %}
-                                                <del>{{ product.price}}</del><br>
-                                                <span class="discounted-price" style="font-size:18px;color:black;">{{ product.discounted_price|stringformat:'d' }}</span>
+                                                <del>₹{{ product.price}}</del><br>
+                                                <span class="discounted-price" style="font-size:18px;color:black;">₹{{ product.discounted_price|stringformat:'d' }}</span>
                                                
                                             {% else %}
-                                            <span style="font-size:18px; color:black;">{{ product.price|stringformat:'d' }}</span>
+                                            <span style="font-size:18px; color:black;">₹{{ product.price|stringformat:'d' }}</span>
                                             {% endif %}
                                             </div><!-- End .product-price -->
                                             {% comment %} <div class="product-nav product-nav-dots">
@@ -705,6 +717,10 @@
                                         </div><!-- End .product-body -->
                                     </div><!-- End .product -->
                                 </div><!-- End .col-sm-6 col-md-4 col-lg-3 -->
+
+
+                        
+
                                 {% endfor %}
                                
                                
@@ -1044,6 +1060,46 @@
                     </div><!-- End .row -->
                 </div><!-- End .container -->
             </div><!-- End .bg-lighter pt-5 pb-5 --> {% endcomment %}
+
+
+<!-- Single Reusable Add To Cart Modal -->
+<div class="modal fade" id="addToCartModal" tabindex="-1" role="dialog" aria-labelledby="addToCartModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addToCartModalLabel">Add to Cart</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div id="addToCartContent" class="modal-product">
+                                <!-- Product details will be dynamically inserted here -->
+                            </div>
+                            <div class="details-filter-row details-row-size">
+                                <label for="size">Size:</label>
+                                <select name="size" id="size" class="form-control">
+                                    <option value="" selected="selected">Select a size</option>
+                                    <!-- sizes will be inserted dynamically -->
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="addToCart()">Add to Cart</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
         </main><!-- End .main -->
 
         <footer class="footer footer-2">
@@ -1370,8 +1426,222 @@
                 });
             {% endfor %}
         {% endif %}
+
+
+         function addToWishlist(productId) {
+             event.preventDefault(); 
+            // Make an AJAX request to your add_to_wishlist view
+            $.ajax({
+                url: '{% url "wishlist-add" %}',  // Update this with your actual URL
+                type: 'POST',
+                data: {
+                    'product_id': productId,
+                    csrfmiddlewaretoken: '{{ csrf_token }}'  // Include CSRF token for Django
+                },
+                success: function(response) {
+
+                    if (response.message) {
+                        console.log('response ',response.message)
+                        // Update wishlist count manually
+                        let wishlistCountElement = document.getElementById("wishlist-count");
+                        let currentCount = parseInt(wishlistCountElement?.innerText || 0);
+                        wishlistCountElement.innerText = currentCount + 1; 
+
+                        wishlistCountElement.style.display = "inline-block";
+
+                      
+                        const alertConfig = {
+                            icon: 'success',
+                            title: 'Success',
+                            text: response.message,
+                            customContainerClass: 'background-color: #28a745; color: white;',
+                        };
+                        Swal.fire(alertConfig);
+                        
+                    } else {
+                        const alertConfig = {
+                            icon: 'warning',
+                            title: 'Warning',
+                            text: response.error,
+                            customContainerClass: 'background-color: #FF5733; color: white;',
+                        };
+                        Swal.fire(alertConfig);
+                    }
+                },
+                error: function(error) {
+                    const alertConfig = {
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'An unexpected error occurred',
+                        customContainerClass: 'background-color: #FF5733; color: white;',
+                    };
+                    Swal.fire(alertConfig);
+                }
+            });
+        }
+
+
+
+        $(document).on("click", ".btn-cart", function (e) {
+            e.preventDefault();
+            const isAuthenticated = {{ request.user.is_authenticated|yesno:"true,false" }};
+            let name = $(this).data("name");
+            let imageUrl = $(this).data("image");
+            let productId = $(this).data("id");
+            let sizes = $(this).data("sizes").split(",");
+
+            if (!isAuthenticated) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Please login',
+                        text: 'You must be logged in to add items to your cart.',
+                    });
+                    return;
+            }
+
+            // Build content dynamically
+            let modalContent = `
+                <h3 class="product-title">${name}</h3>
+                <img src="${imageUrl}" alt="${name}" style="width:100px;height:auto;">
+                <input type="hidden" value="${productId}" id="pid">
+                
+                <div class="details-filter-row details-row-size">
+                    <label for="qty">Qty:</label>
+                    <div class="product-details-quantity">
+                        <input type="number" id="txtQty" name="qty" class="form-control" value="1" min="1" max="10" step="1" required>
+                    </div>
+                </div>
+            `;
+
+            // Insert product info
+            $('#addToCartContent').html(modalContent);
+
+            // Insert sizes dynamically
+            let sizeSelect = $("#size");
+            sizeSelect.empty();
+            sizeSelect.append(`<option value="">Select a size</option>`);
+            sizes.forEach(size => {
+                sizeSelect.append(`<option value="${size}">${size}</option>`);
+            });
+
+            // Show modal
+            $('#addToCartModal').modal('show');
+        });
+
+
+
+    function addToCart() {
+        var productId = $('#pid').val();
+        var size = $('#size').val();
+        var quantity = $('#txtQty').val(); 
+
+        
+
+
+
+        if (!size || quantity <= 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Please select a size and enter a valid quantity.',
+                customContainerClass: 'background-color: #FF5733; color: white;',
+            });
+            return;
+        }
+
+        if(quantity > 10){
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'You can only order up to 10 items at a time.',
+                customContainerClass: 'background-color: #FF5733; color: white;',
+            });
+            return;
+        }
+
+        var postObj = {
+            product_qty: quantity,
+            pid: productId,
+            size: size,
+        };
+
+
+        fetch("{% url 'cart-add' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}',
+            },
+            body: JSON.stringify(postObj),
+        }).then(response => {
+            return response.json();
+        }).then(data => {
+            console.log("Response Data:", data);
+
+            let alertConfig = {
+                icon: 'error',
+                title: 'Error',
+                text: 'An error occurred while adding the product to the cart.',
+                customContainerClass: 'background-color: #FF5733; color: white;',
+            };
+
+            if (data.status === 'Product added to cart') {
+
+                let cartItemCount = document.getElementById("cart-items-count");
+                let currentCount = parseInt(cartItemCount?.innerText || 0);
+                cartItemCount.innerText = currentCount + 1; 
+                cartItemCount.style.display = "inline-block";
+
+
+                alertConfig = {
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Product added to the cart successfully!',
+                    customContainerClass: 'background-color: #28a745; color: white;',
+                };
+            } else if (data.status === 'Product already in cart!') {
+                alertConfig = {
+                    icon: 'info',
+                    title: 'Info',
+                    text: 'Product is already in the cart.',
+                    customContainerClass: 'background-color: #007bff; color: white;',
+                };
+            } else if (data.status === 'Product stock not available' || data.status === 'Selected size not available for this product' || data.status === 'Product not found') {
+                alertConfig = {
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.status,
+                    customContainerClass: 'background-color: #FF5733; color: white;',
+                };
+            }else if(data.status === 'Please Login to add to cart'){
+                alertConfig = {
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.status,
+                    customContainerClass: 'background-color: #FF5733; color: white;',
+                };
+
+            }
+
+            Swal.fire(alertConfig);
+
+            // Close the modal
+            $('#addToCartModal').modal('hide');
+        }).catch(error => {
+            console.error("Error:", error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'An unexpected error occurred.',
+                customContainerClass: 'background-color: #FF5733; color: white;',
+            });
+        });
+    }
+    
     </script>
 </body>
+
 
 
 <!-- molla/index-5.html  22 Nov 2019 09:56:18 GMT -->

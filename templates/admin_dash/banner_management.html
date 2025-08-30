@@ -13,7 +13,7 @@
              {% include "alert.html" %}
             <div class="card-body">
               <h4 class="card-title text-center">Banner Management</h4>
-              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_banner_image'%}">+ Add Banner
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add-banner-image'%}">+ Add Banner
               </a></label>
               <div class="table-responsive">
                 <table class="table">
@@ -37,9 +37,9 @@
                           <td>{{ banner.subtitle_2}}</td>
                           <td><img src="{{ banner.banner.url }}" alt="Banner Image"></td>
                           {% if banner.is_available == True %}
-                              <td><a class="btn btn-sm btn-danger" style="color: white;" href="{% url 'delete_banner' banner.id %}">Block</a></td>
+                              <td><a class="btn btn-sm btn-danger" style="color: white;" href="{% url 'delete-banner' banner.id %}">Block</a></td>
                           {% else%}
-                              <td><a class="btn btn-sm btn-success" style="color: white;" href="{% url 'delete_banner' banner.id %}">Unblock</a></td>
+                              <td><a class="btn btn-sm btn-success" style="color: white;" href="{% url 'delete-banner' banner.id %}">Unblock</a></td>
                         {% endif %}
                         </tr>
                         {% endfor %}

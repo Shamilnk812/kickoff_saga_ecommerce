@@ -10,7 +10,7 @@
         <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                   <li class="nav-item w-100">
-                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'view_offers' %}" method="get" >
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'view-offers' %}" method="get" >
                       <input type="text" class="form-control" placeholder="Search offer.." name="query" id="query" value="{{ query|default_if_none:'' }}">
                       <button class="btn btn-primary" type="submit">Search</button>
                     </form>
@@ -23,9 +23,9 @@
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_offer' %}">+ Add New Offer</a>
-              <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'view_category_offers' %}">Apply Offers for Category</a>
-              <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'view_product_offers' %}">Apply Offers for Product</a>
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add-offer' %}">+ Add New Offer</a>
+              <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'view-category-offers' %}">Apply Offers for Category</a>
+              <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'view-product-offers' %}">Apply Offers for Product</a>
                  <div class="table-responsive">
                 <table class="table">
                   <thead>
@@ -65,9 +65,9 @@
                         </td>
                         <td>
                           {% if offer.is_block %}
-                                <a data-url="{% url 'delete_offer' offer.id %}"  class="unblock-offer btn btn-sm btn-success" style="color: white;"> Unblock</a>
+                                <a data-url="{% url 'delete-offer' offer.id %}"  class="unblock-offer btn btn-sm btn-success" style="color: white;"> Unblock</a>
                           {%else%}
-                                <a data-url="{% url 'delete_offer' offer.id %}"  class="block-offer btn btn-sm btn-danger" style="color: white;"> Block</a>
+                                <a data-url="{% url 'delete-offer' offer.id %}"  class="block-offer btn btn-sm btn-danger" style="color: white;"> Block</a>
                           {%endif%}
                       </td>  
                    </tr>

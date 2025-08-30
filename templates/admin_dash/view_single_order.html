@@ -11,7 +11,7 @@
         <div class="col-md-12">
           <div class="card shadow">
             <div class="card-header d-flex justify-content-between align-items-center">
-              <a href="{% url 'all_orders' %}" class="btn btn-warning">&#8592;&nbsp;Back</a>
+              <a href="{% url 'all-orders' %}" class="btn btn-warning">&#8592;&nbsp;Back</a>
               
              {% if can_cancel_all %}
               <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#cancelAllModal{{ item.id }}">Cancel All</button>
@@ -140,7 +140,7 @@
     <div class="modal fade" id="editModal{{ item.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ item.id }}" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
-          <form method="POST" action="{% url 'update_single_order_status' order.id %}">
+          <form method="POST" action="{% url 'update-single-order-status' order.id %}">
             {% csrf_token %}
             <div class="modal-header">
               <h5 class="modal-title" id="editModalLabel{{ item.id }}">Edit Status - {{ item.product.name }}</h5>
@@ -189,14 +189,14 @@
           </div>
 
           <div class="modal-footer">
-            <form method="POST" action="{% url 'handle_return_order' order.id %}" >
+            <form method="POST" action="{% url 'handle-return-order' order.id %}" >
               {% csrf_token %}
               <input type="hidden" name="action" value="accept_return">
               <input type="hidden" name="item_id" value="{{ item.id }}">
               <button type="submit" class="btn btn-success">Accept</button>
             </form>
 
-            <form method="POST" action="{% url 'handle_return_order' order.id %}">
+            <form method="POST" action="{% url 'handle-return-order' order.id %}">
               {% csrf_token %}
               <input type="hidden" name="action" value="reject_return">
               <input type="hidden" name="item_id" value="{{ item.id }}">
@@ -216,7 +216,7 @@
     <div class="modal fade" id="cancelModal{{ item.id }}" tabindex="-1" aria-labelledby="cancelModalLabel{{ item.id }}" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
-          <form method="POST" action="{% url 'handle_cancel_single_order_item' order.id %}" >
+          <form method="POST" action="{% url 'handle-cancel-single-order-item' order.id %}" >
             {% csrf_token %}
             <div class="modal-header">
               <h5 class="modal-title" id="cancelModalLabel{{ item.id }}">Cancel Order</h5>
@@ -242,7 +242,7 @@
   <div class="modal fade" id="cancelAllModal{{ item.id }}" tabindex="-1" aria-labelledby="cancelAllModalLabel{{ item.id }}" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
-          <form method="POST" action="{% url 'handle_cancel_all_order' order.id %}" >
+          <form method="POST" action="{% url 'handle-cancel-all-order' order.id %}" >
             {% csrf_token %}
             <div class="modal-header">
               <h5 class="modal-title" id="cancelAllModalLabel{{ item.id }}">Cancel All Order</h5>

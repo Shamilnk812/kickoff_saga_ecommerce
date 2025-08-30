@@ -11,7 +11,7 @@
          <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                   <li class="nav-item w-100">
-                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'product_management' %}" method="get" >
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'product-management' %}" method="get" >
                       <input type="text" class="form-control" placeholder="Search category" name="query" id="query" value="{{ query|default_if_none:'' }}">
                       <button class="btn btn-primary" type="submit">Search</button>
                     </form>
@@ -24,7 +24,7 @@
           <div class="card">
             {% include "alert.html" %}
             <div class="card-body">
-               <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_product' %}">Add New Product</a>
+               <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add-product' %}">Add New Product</a>
              
               <div class="table-responsive">
                 <table class="table">
@@ -66,12 +66,12 @@
                       </td>
                     
                       <td>
-                        <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'show_variants' product.id %}"> View </a>
+                        <a class="btn btn-sm btn-info" style="color : white;" href="{% url 'show-variants' product.id %}"> View </a>
                       </td> 
                       
                       <td>
                         {%if product.status == 'draft'%}
-                            <a class="btn btn-sm btn-primary" style="color : white;" href="{% url 'publish_product' product.id%}">Publish
+                            <a class="btn btn-sm btn-primary" style="color : white;" href="{% url 'publish-product' product.id%}">Publish
                             <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
                             </a>
                         {%else%}
@@ -81,11 +81,11 @@
 
                       </td>
                           <td>
-                              <a class="btn btn-sm btn-warning" style="color: white;" href="{% url 'update_product' product.id %}"> Edit </a>
+                              <a class="btn btn-sm btn-warning" style="color: white;" href="{% url 'update-product' product.id %}"> Edit </a>
                             {% if product.is_available %}
-                                <a  class="block-product btn btn-sm btn-danger"  style="color: white;" data-url="{% url 'product_delete' product.id %}"> Block</a>
+                                <a  class="block-product btn btn-sm btn-danger"  style="color: white;" data-url="{% url 'product-delete' product.id %}"> Block</a>
                                 {% else %}
-                                  <a class="unblock-product btn btn-sm btn-success" style="color: white;" data-url="{% url 'product_delete' product.id %}"> Unblock</a>
+                                  <a class="unblock-product btn btn-sm btn-success" style="color: white;" data-url="{% url 'product-delete' product.id %}"> Unblock</a>
                                   
                                 {% endif %}
                               

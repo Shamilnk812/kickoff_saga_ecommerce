@@ -54,11 +54,11 @@ def log_in(request):
              
             if not user.is_active:
                 messages.error(request, 'Your account is blocked. Please contact support.')
-                return redirect('log_in')
+                return redirect('login')
             
             if user.is_superuser:
                 messages.error(request, 'Admin cannot login through this page.')
-                return redirect('log_in')
+                return redirect('login')
             
             user = authenticate(request, username=user.username, password=password)
             if user is not None:
@@ -68,7 +68,7 @@ def log_in(request):
                     return redirect('home')
                 else:
                     messages.error(request, 'You account is not verified')
-                    return redirect('log_in')
+                    return redirect('login')
             else:
                 messages.error(request, 'Oops.. Bad credentials!')
         except ObjectDoesNotExist:
@@ -175,6 +175,9 @@ def home(request) :
     ).order_by('-id')[:8]
 
     banners = Banner.objects.filter(is_available=True).order_by('-id')
+    for product in all_products:
+        product.sizes_list = ",".join([str(v.size) for v in product.variants_set.all()])
+
     return render(request, 'base.html',{'all_products':all_products, 'banners': banners})
 
 
@@ -184,6 +187,8 @@ def home(request) :
 def show_single_product(request,product_id) :
     product = get_object_or_404(Product, id=product_id)
     related_products = Product.objects.filter(categories=product.categories).exclude(id=product_id)[:4]
+    for item in related_products:
+        item.sizes_list = ",".join([str(v.size) for v in item.variants_set.all()])
 
     context = {
         'product':product,
@@ -198,34 +203,55 @@ def store(request):
     cate_id = request.GET.get('categories')
     brand_id = request.GET.get('brand') 
     query = request.GET.get('query')
-   
+    min_price = request.GET.get('min_price')
+    max_price = request.GET.get('max_price')
+
     products = Product.objects.filter(
         is_available=True,
         categories__is_available=True,
         brand__is_available=True,
         status='published'
-        )
-    
+    )
+
+    for product in products:
+        product.sizes_list = ",".join([str(v.size) for v in product.variants_set.all()])
+
     if query:
         products = products.filter(
            Q(name__icontains=query) | 
-           Q(brand__name__icontains=query)|
+           Q(brand__name__icontains=query) |
            Q(categories__name__icontains=query) 
         )
-    
+
     categories = Category.objects.filter(is_available=True)
     brands = Brand.objects.filter(is_available=True)
     category = None 
     brand = None
-    
 
     if brand_id and brand_id != 'None':
         products = products.filter(brand__id=brand_id)
-        brand = products
+        brand = get_object_or_404(Brand, id=brand_id)
 
     if cate_id and cate_id != 'None':
         category = get_object_or_404(Category, id=cate_id)
         products = products.filter(categories=category)
+
+    if min_price and max_price:
+        try:
+            min_price = int(min_price)
+            max_price = int(max_price)
+        except ValueError:
+            messages.error(request, "Price must be a valid number.")
+            return redirect('store')
+
+        if min_price > max_price:
+            messages.error(request, "Minimum price should be less than Maximum price.")
+            return redirect('store')
+
+        if min_price < 0 or max_price < 0:
+            messages.error(request, "Price values must be positive.")
+            return redirect('store')
+        products = products.filter(price__gte=min_price, price__lte=max_price)
 
     paginator = Paginator(products, 8)
     page_number = request.GET.get('page')
@@ -240,6 +266,8 @@ def store(request):
         'category': category, 
         'brand': brand,
         'query': query,
+        'min_price': min_price,
+        'max_price': max_price,
     }
 
     return render(request, 'store.html', context)

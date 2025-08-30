@@ -10,7 +10,7 @@
                 <ol class="breadcrumb">
                  
                   <li class="nav-item w-100">
-                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'user_management' %}" method="get" >
+                    <form class="nav-link mt-2 mt-md-0 d-none d-lg-flex search" action="{% url 'user-management' %}" method="get" >
                       <input type="text" class="form-control" placeholder="Search users" name="query" id="query" value="{{ query|default_if_none:'' }}">
                       <button class="btn btn-primary" type="submit">Search</button>
                     </form>
@@ -61,7 +61,7 @@
                                       Block
                                     </button>
                                   {% else %}
-                                    <form method="POST" action="{% url 'unblock_user' user.id %}" class="d-inline unblock-form">
+                                    <form method="POST" action="{% url 'unblock-user' user.id %}" class="d-inline unblock-form">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-sm btn-success unblock-btn">
                                           <span class="btn-text">Unblock</span>
@@ -96,7 +96,7 @@
 
 <div class="modal fade" id="blockReasonModal" tabindex="-1" aria-labelledby="blockReasonModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <form method="post" action="{% url 'block_user' user_id=0 %}" id="blockForm">
+    <form method="post" action="{% url 'block-user' user_id=0 %}" id="blockForm">
       {% csrf_token %}
       <div class="modal-content">
         <div class="modal-header">
@@ -139,7 +139,7 @@
               const modalTitle = blockModal.querySelector('#blockReasonModalLabel');
               modalTitle.textContent = `Block User: ${username}`;
               const form = document.getElementById('blockForm');
-              form.action = `/admin_dash/block_user/${userId}/`;
+              form.action = `/admin-dash/block-user/${userId}/`;
             });
 
             // Handle form submit with loader

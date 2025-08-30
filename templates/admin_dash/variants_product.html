@@ -16,7 +16,7 @@
           <div class="card">
             <div class="card-body">
               <h4 class="card-title text-center">Images</h4>
-              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_image_product' product.id%}">+ Add Image
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add-image-product' product.id%}">+ Add Image
               </a>
               <div class="table-responsive">
                 <table class="table">
@@ -33,7 +33,7 @@
                       <tr>
                         <td>{{forloop.counter}}</td>
                         <td><img src="{{img.image.url}}" alt="Product Image">  </td>
-                        <td><a class="delete-image btn btn-sm btn-danger" style="color : white;" data-url="{% url 'delete_product_image' img.id product.id %}"> Delete </a></td>
+                        <td><a class="delete-image btn btn-sm btn-danger" style="color : white;" data-url="{% url 'delete-product-image' img.id product.id %}"> Delete </a></td>
                     </tr>
                       {% endfor %}
                     {%else%}
@@ -57,7 +57,7 @@
           <div class="card">
             <div class="card-body">
               <h4 class="card-title text-center">Size and Quantity</h4>
-              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add_size_and_quantity' product.id%}">+ Add Size 
+              <a class="btn btn-sm btn-success" style="color : white;" href="{% url 'add-size-and-quantity' product.id%}">+ Add Size 
               </a>
               <div class="table-responsive">
                 <table class="table">
@@ -77,13 +77,13 @@
                         <td>{{forloop.counter}}</td>
                         <td>{{variant.size}}</td>
                         <td>{{variant.quantity}} </td>
-                        <td><a class="btn btn-sm btn-warning" style="color : white;" href="{% url 'update_size_quantity' variant.id %}"> Edit </a></td>
+                        <td><a class="btn btn-sm btn-warning" style="color : white;" href="{% url 'update-size-quantity' variant.id %}"> Edit </a></td>
 
                         <td>
                           {% if variant.is_available%}
-                            <a  class="delete-variant btn btn-sm btn-danger"  style="color : white;" data-url="{% url 'delete_product_size' variant.id product.id %}"> Block </a>
+                            <a  class="delete-variant btn btn-sm btn-danger"  style="color : white;" data-url="{% url 'delete-product-size' variant.id product.id %}"> Block </a>
                           {%else%}
-                            <a  class="btn btn-sm btn-success"  style="color : white;" href="{% url 'delete_product_size' variant.id product.id %}"> Unblock </a>
+                            <a  class="btn btn-sm btn-success"  style="color : white;" href="{% url 'delete-product-size' variant.id product.id %}"> Unblock </a>
                           {%endif%}
 
                         </td>

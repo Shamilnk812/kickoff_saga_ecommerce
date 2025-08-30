@@ -1,7 +1,7 @@
 {% extends "user_account/user_base_account.html" %}
 {% block account %}
 <div>
-    <form action="{% url 'account_details' %}" method="POST">
+    <form action="{% url 'account-details' %}" method="POST">
         {% csrf_token %}
         <input type="hidden" name="update_info" value="1">
         {{ user_form.first_name.label_tag }}
@@ -36,7 +36,7 @@
     </form>
      <br>
      <br>
-    <form action="{% url 'account_details' %}" method="POST">
+    <form action="{% url 'account-details' %}" method="POST">
         {% csrf_token %}
         <div class="row">
             <div class="col-sm-6">

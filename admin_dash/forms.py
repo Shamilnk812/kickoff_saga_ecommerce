@@ -25,7 +25,7 @@ class ProductForm(forms.ModelForm):
         super(ProductForm, self).__init__(*args, **kwargs)
         # Filter valid offers
         self.fields['categories'].queryset  = Category.objects.filter(is_available=True)    
-        self.fields['brand'].queryset       = Brand.objects.filter(is_block=False)    
+        self.fields['brand'].queryset       = Brand.objects.filter(is_available=True)    
     
 
     def clean_name(self):
@@ -73,7 +73,7 @@ class ProductForm(forms.ModelForm):
         description = re.sub(r'\s+', ' ', description)
         if len(description) < 10:
             raise forms.ValidationError("Product descripton must be atleast 10 characters")
-          # Allowed characters: letters, numbers, spaces, hyphen, ampersand
+        # Allowed characters: letters, numbers, spaces, hyphen, ampersand
         if not re.match(r'^[A-Za-z0-9\s&\-.]+$', description):
             raise forms.ValidationError("Product name contains invalid characters.")
     

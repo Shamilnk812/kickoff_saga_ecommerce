@@ -147,7 +147,7 @@
                                         </tr>
                                         <tr class="summary-shipping-row">
                                                 <td style="background:violet" class="text-center">{{ applied_coupon|upper }} {{coupon_discount_percentage}}% OFF </td>
-                                                <td><a href="{% url 'remove_coupon' %}"><i class="icon-close"></i></a></td>
+                                                <td><a href="{% url 'coupon-remove' %}"><i class="icon-close"></i></a></td>
                                            </tr>
                                            <tr class="summary-shipping">
                                             <td>Coupon discount :&nbsp;</td>
@@ -244,7 +244,7 @@
   
     function payWithWallet() {
         $.ajax({
-            url: '{% url "check_wallet_balance" %}',
+            url: '{% url "check-wallet-balance" %}',
             method: 'GET',
             success: function(response) {
                 if (response.success) {
