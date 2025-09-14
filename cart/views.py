@@ -16,6 +16,7 @@ import json
 import random
 from account_user.validators import *
 from django.db.models import Q
+import math
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
 
@@ -80,7 +81,7 @@ def view_cart(request):
             if cart_item.is_valid_cart_item and cart_item.product.offer and cart_item.product.offer.is_valid:
                 total_saved_amount += cart_item.product.offer_save_amount() * cart_item.product_qty
         
-        
+        print('toatla amount', math.floor(total_amount))
         context = {
             'cart': carts,
             'total_amount': total_amount,
@@ -258,8 +259,8 @@ def check_out(request):
         return redirect(reverse('view_cart'))  
     
     total_amount = sum(item.total_cost for item in cart_items)
-    total_price = total_amount 
-  
+    total_price = total_amount
+    
     # check if the coupon is exist and show the coupon and discount amount
     applied_coupon_code = request.session.get('coupon_code')
     coupon = Coupon.objects.filter(coupon_code=applied_coupon_code, is_active=True).first()
@@ -283,12 +284,12 @@ def check_out(request):
     shipping_type = request.session.get('shipping_type')
     total_price = total_price + int(shipping_cost)
 
-
     # address = Address.objects.filter(user=request.user).last()
     addresses = Address.objects.filter(user=request.user)
+    
     context = {
         'cart_items': cart_items,
-        'total_price': max(total_price, 0), 
+        'total_price': max(round(total_price, 2), 0), 
         'sub_total': total_amount,
         'addresses': addresses ,
         'total_saved_amount': total_saved_amount,
@@ -304,13 +305,16 @@ def check_out(request):
 # ----------- Check user wallet --------------
 @login_required(login_url='log_in')
 def check_wallet_balance(request):
-    user_wallet = Wallet.objects.get(user=request.user)
-    total_price = float(request.POST.get('total_price', 0))  
-
-    if user_wallet.wallet >= total_price:
-        return JsonResponse({'success': True})
-    else:
-        return JsonResponse({'success': False})
+    if request.method == "POST":
+        user_wallet = Wallet.objects.get(user=request.user)
+        # total_price = float(request.POST.get('total_price', 0))  
+        total_price = Decimal(request.POST.get('total_price', "0")).quantize(Decimal("0.01"))
+       
+        if user_wallet.wallet >= total_price:
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False})
+    return JsonResponse({'success': False, 'error': 'Invalid request'})
 
 
 
@@ -318,15 +322,10 @@ def check_wallet_balance(request):
 @csrf_exempt
 def update_shipping(request):
     if request.method == "POST":
-        print('heeeeeey bor ')
         try:
             data = json.loads(request.body)
             shipping_type = data.get("shipping_type")
             shipping_amount = data.get("shipping_amount")
-
-            print('shippping type',shipping_type)
-            print('shiping amount', shipping_amount)
-            # Validate and convert amount
             try:
                 shipping_amount = int(shipping_amount)
             except (TypeError, ValueError):
@@ -367,7 +366,6 @@ def place_order(request):
             messages.error(request, "Your cart is contains unavailable items. Plese romove it")
             return redirect('checkout')
         
-
         # Checking the order items stock
         for item in cart_items:
             variant = Variants.objects.select_for_update().filter(product=item.product, size=item.size).first()
@@ -375,17 +373,18 @@ def place_order(request):
                 messages.error(request, f"Insufficient stock for {item.product.name} (Size: {item.size}).")
                 return redirect('checkout')
         
-        # Add shipping cost
         cart_original_total = sum(item.total_cost for item in cart_items)
         cart_total_price = cart_original_total
-        shipping_type = request.session.get('shipping_type')
-        shipping_cost = request.session.get('shipping_amount', 0)
-        cart_total_price += int(shipping_cost)
 
         # Calculate total and apply coupon discount (if coupon exist)
         applied_coupon_code = request.session.get('coupon_code')
         coupon_discount, coupon_obj = apply_coupon(applied_coupon_code, cart_total_price)
         cart_total_price -= coupon_discount
+        
+        # Add shipping cost
+        shipping_type = request.session.get('shipping_type')
+        shipping_cost = request.session.get('shipping_amount', 0)
+        cart_total_price += int(shipping_cost)
         
         # Calculate the total saved amount (offer)
         total_offer_saved_amount = 0  
@@ -399,6 +398,7 @@ def place_order(request):
             if wallet.wallet < cart_total_price:
                 messages.error(request, "Insufficient wallet balance.")
                 return redirect('checkout')
+           
             wallet.wallet -= cart_total_price
             wallet.save()
         
@@ -407,7 +407,7 @@ def place_order(request):
 
         for item in cart_items:
             create_order_item(order, item, cart_original_total, coupon_discount)
-        
+
         # Create payment for tracking payment history
         if request.POST.get('payment_mode') in ['paid by razorpay', 'paid by wallet']:
             create_payment(
@@ -426,10 +426,6 @@ def place_order(request):
         request.session.pop('coupon_code', None)
         return redirect('order-confirmation')
     
-
-        # return render(request, 'cart/order_confirmation.html')
-
-
 
 @login_required
 def order_confirmation(request) :

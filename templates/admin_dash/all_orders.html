@@ -47,7 +47,7 @@
                       <td>{{order.fname}} {{order.lname}}</td>
                       <td>{{order.created_at}}</td>
                       <td>{{order.orderitem_set.count}}</td>
-                      <td>₹{{order.total_price | stringformat:'d'}}</td>
+                      <td>₹{{order.total_price | floatformat:2}}</td>
                       <td >
                          <a href="{% url 'view-single-order' order.id %}" class="btn bg-primary text-white">View 
                            {% if order.id in orders_with_return %}

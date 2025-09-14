@@ -20,7 +20,7 @@
           <tr>
             <td class="pl-3">{{item.created_at}}</td>
             <td class="pl-3">{{item.tracking_no}}</td>
-            <td class="pl-3">{{item.total_price}}</td>
+            <td class="pl-3">{{item.total_price|floatformat:2 }}</td>
             <td class="pl-3">{{ item.orderitem_set.count }}</td>
             {% comment %} <td class="pl-3">{{item.status}}</td> {% endcomment %}
             {% comment %} <td class="pl-3"><a href="{% url 'download_invoice' item.id%} ">Download</a></td> {% endcomment %}

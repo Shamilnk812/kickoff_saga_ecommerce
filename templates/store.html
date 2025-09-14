@@ -35,14 +35,40 @@
 
                         <div class="toolbox-right">
                             <div class="toolbox-sort">
+
+                                <form method="GET" id="sortForm">
+    {% if cate_id %}
+        <input type="hidden" name="categories" value="{{ cate_id }}">
+    {% endif %}
+    {% if brand_id %}
+        <input type="hidden" name="brand" value="{{ brand_id }}">
+    {% endif %}
+    {% if min_price %}
+        <input type="hidden" name="min_price" value="{{ min_price }}">
+    {% endif %}
+    {% if max_price %}
+        <input type="hidden" name="max_price" value="{{ max_price }}">
+    {% endif %}
+    {% if query %}
+        <input type="hidden" name="query" value="{{ query }}">
+    {% endif %}
+
+    <label for="sortby">Sort by:</label>
+    <select name="sortby" id="sortby" class="form-control" onchange="this.form.submit()">
+        <option value="date" {% if sortby == 'date' or not sortby %}selected{% endif %}>Newest</option>
+        <option value="price_low_high" {% if sortby == 'price_low_high' %}selected{% endif %}>Price: Low to High</option>
+        <option value="price_high_low" {% if sortby == 'price_high_low' %}selected{% endif %}>Price: High to Low</option>
+    </select>
+</form>
+
                                 {% comment %} <label for="sortby">Sort by:</label>
                                 <div class="select-custom">
                                     <select name="sortby" id="sortby" class="form-control">
-                                        <option value="popularity" selected="selected">Most Popular</option>
-                                        <option value="rating">Most Rated</option>
-                                        <option value="date">Date</option>
+                                        <option value="popularity" selected="selected">Newest </option>
+                                        <option value="rating">Low to High </option>
+                                        <option value="date">High to Low</option>
                                     </select>
-                                </div> {% endcomment %}
+                                </div>  {% endcomment %}
                             </div><!-- End .toolbox-sort -->
                             {% comment %} <div class="toolbox-layout">
                                 <a href="category-list.html" class="btn-layout">
@@ -205,12 +231,12 @@
                             <ul class="pagination justify-content-center">
                                 {% if all_products.has_previous %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&page=1" aria-label="First">
+                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&sortby={{ sortby }}&page=1" aria-label="First">
                                             <span aria-hidden="true">&laquo;&laquo;</span>
                                         </a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&page={{ all_products.previous_page_number }}" aria-label="Previous">
+                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&sortby={{ sortby }}&page={{ all_products.previous_page_number }}" aria-label="Previous">
                                             <span aria-hidden="true">&laquo;</span>
                                         </a>
                                     </li>
@@ -218,18 +244,18 @@
                         
                                 {% for page_num in all_products.paginator.page_range %}
                                     <li class="page-item{% if page_num == all_products.number %} active{% endif %}">
-                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&page={{ page_num }}">{{ page_num }}</a>
+                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&sortby={{ sortby }}&page={{ page_num }}">{{ page_num }}</a>
                                     </li>
                                 {% endfor %}
                         
                                 {% if all_products.has_next %}
                                     <li class="page-item">
-                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&page={{ all_products.next_page_number }}" aria-label="Next">
+                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&sortby={{ sortby }}&page={{ all_products.next_page_number }}" aria-label="Next">
                                             <span aria-hidden="true">&raquo;</span>
                                         </a>
                                     </li>
                                     <li class="page-item">
-                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&page={{ all_products.paginator.num_pages }}" aria-label="Last">
+                                        <a class="page-link" href="?categories={{ cate_id }}&brand={{ brand_id }}&sortby={{ sortby }}&page={{ all_products.paginator.num_pages }}" aria-label="Last">
                                             <span aria-hidden="true">&raquo;&raquo;</span>
                                         </a>
                                     </li>
@@ -257,13 +283,13 @@
                                 <div class="widget-body">
                                     <div class="filter-items filter-items-count">
                                         {% for category in categories %}
-<li style="list-style: none;">
-    <a href="?categories={{category.id}}{% if brand_id %}&brand={{brand_id}}{% endif %}{% if min_price and max_price %}&min_price={{min_price}}&max_price={{max_price}}{% endif %}"
-       class="{% if cate_id|default:'' == category.id|stringformat:'s' %}text-primary font-weight-bold{% endif %}">
-       {{ category.name }}
-    </a>
-</li>
-{% endfor %}
+                                        <li style="list-style: none;">
+                                            <a href="?categories={{category.id}}{% if brand_id %}&brand={{brand_id}}{% endif %}{% if sortby %}&sortby={{sortby}}{% endif %}{% if min_price and max_price %}&min_price={{min_price}}&max_price={{max_price}}{% endif %}"
+                                            class="{% if cate_id|default:'' == category.id|stringformat:'s' %}text-primary font-weight-bold{% endif %}">
+                                            {{ category.name }}
+                                            </a>
+                                        </li>
+                                        {% endfor %}
                                     </div><!-- End .filter-items -->
                                 </div><!-- End .widget-body -->
                             </div><!-- End .collapse -->
@@ -283,13 +309,13 @@
                                     <div class="filter-items">
                                         <div class="filter-item">
                                             {% for brand in brands %}
-<li style="list-style: none;">
-    <a href="?brand={{brand.id}}{% if cate_id %}&categories={{cate_id}}{% endif %}{% if min_price and max_price %}&min_price={{min_price}}&max_price={{max_price}}{% endif %}"
-       class="{% if brand_id|default:'' == brand.id|stringformat:'s' %}text-primary font-weight-bold{% endif %}">
-       {{ brand.name }}
-    </a>
-</li>
-{% endfor %}
+                                            <li style="list-style: none;">
+                                                <a href="?brand={{brand.id}}{% if cate_id %}&categories={{cate_id}}{% endif %}{% if sortby %}&sortby={{sortby}}{% endif %}{% if min_price and max_price %}&min_price={{min_price}}&max_price={{max_price}}{% endif %}"
+                                                class="{% if brand_id|default:'' == brand.id|stringformat:'s' %}text-primary font-weight-bold{% endif %}">
+                                                {{ brand.name }}
+                                                </a>
+                                            </li>
+                                            {% endfor %}
                                         </div><!-- End .filter-item -->
 
                                      </div><!-- End .filter-items -->
@@ -320,6 +346,9 @@
                                                 {% endif %}
                                                 {% if query %}
                                                     <input type="hidden" name="query" value="{{ query }}">
+                                                {% endif %}
+                                                {% if sortby %}
+                                                    <input type="hidden" name="sortby" value="{{ sortby }}">
                                                 {% endif %}
 
                                                 <div style="display:flex; flex-direction:column; gap:12px;">

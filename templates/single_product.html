@@ -68,11 +68,11 @@
 
                                     <div>
                                     {% if product.offer and product.offer.is_valid %}
-                                        <del>₹{{ product.price|stringformat:'d'}}</del><br>
-                                        <span class="discounted-price" style="font-size:22px;color: #c96;font-weight:400;">₹{{ product.discounted_price|stringformat:'d' }}</span>
+                                        <del>₹{{ product.price| floatformat:2 }}</del><br>
+                                        <span class="discounted-price" style="font-size:22px;color: #c96;font-weight:400;">₹{{ product.discounted_price|floatformat:2  }}</span>
                                        
                                     {% else %}
-                                    <span style="font-size:22px;color: #c96;font-weight:400;">₹{{ product.price|stringformat:'d' }}</span>
+                                    <span style="font-size:22px;color: #c96;font-weight:400;">₹{{ product.price|floatformat:2  }}</span>
                                     {% endif %}
                                     </div><!-- End .product-price -->
 
@@ -331,11 +331,11 @@
                                 <h3 class="product-title"><a href="{% url 'single-product' related_product.id %}">{{related_product.name|truncatechars:20}}</a></h3><!-- End .product-title -->
                                 <div>
                                     {% if related_product.offer and related_product.offer.is_valid %}
-                                    <del>₹{{ related_product.price}}</del><br>
-                                    <span class="discounted-price" style="font-size:18px;color:#c96;">₹{{ related_product.discounted_price|stringformat:'d' }}</span>
+                                    <del>₹{{ related_product.price |floatformat:2 }}</del><br>
+                                    <span class="discounted-price" style="font-size:18px;color:#c96;">₹{{ related_product.discounted_price|floatformat:2  }}</span>
                                     
                                     {% else %}
-                                    <span style="font-size:18px; color:#c96;">₹{{ related_product.price|stringformat:'d' }}</span>
+                                    <span style="font-size:18px; color:#c96;">₹{{ related_product.price|floatformat:2  }}</span>
                                     {% endif %}
                                 </div><!-- End .product-price -->
                                 {% comment %} <div class="ratings-container">

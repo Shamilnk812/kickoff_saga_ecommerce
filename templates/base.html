@@ -702,11 +702,11 @@
                                             <h3 class="product-title"><a href="{% url 'single-product' product.id %}">{{product.name}}</a></h3><!-- End .product-title -->
                                             <div >
                                                 {% if product.offer and product.offer.is_valid %}
-                                                <del>₹{{ product.price}}</del><br>
-                                                <span class="discounted-price" style="font-size:18px;color:black;">₹{{ product.discounted_price|stringformat:'d' }}</span>
+                                                <del>₹{{ product.price|floatformat:2 }}</del><br>
+                                                <span class="discounted-price" style="font-size:18px;color:black;">₹{{ product.discounted_price|floatformat:2  }}</span>
                                                
                                             {% else %}
-                                            <span style="font-size:18px; color:black;">₹{{ product.price|stringformat:'d' }}</span>
+                                            <span style="font-size:18px; color:black;">₹{{ product.price|floatformat:2 }}</span>
                                             {% endif %}
                                             </div><!-- End .product-price -->
                                             {% comment %} <div class="product-nav product-nav-dots">

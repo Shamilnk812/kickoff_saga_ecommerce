@@ -58,9 +58,9 @@
                                     </td>
                                    
                                     <td class="price-col">{% if item.product.offer and item.product.offer.is_valid%}
-                                        ₹{{ item.product.discounted_price|stringformat:'d' }} <span class="text-muted" style="font-size: 1rem; text-decoration: line-through; margin-left: 5px;">{{item.product.price | stringformat:'d'}}</span>
+                                        ₹{{ item.product.discounted_price|floatformat:2  }} <span class="text-muted" style="font-size: 1rem; text-decoration: line-through; margin-left: 5px;">{{item.product.price|floatformat:2 }}</span>
                                         {% else %}
-                                        ₹{{ item.product.price | stringformat:'d'}}
+                                        ₹{{ item.product.price|floatformat:2 }}
                                         {% endif %}
                                     </td>
                                      <td >
@@ -93,7 +93,7 @@
 
                                     <td class="total-col">
                                         {% if item.is_valid_cart_item %}
-                                            ₹{{ item.total_cost|stringformat:'d' }}
+                                            ₹{{ item.total_cost|floatformat:2  }}
                                         {%else%}
                                         -
                                         {%endif%}
@@ -143,7 +143,7 @@
                                 <tbody>
                                     <tr class="summary-subtotal">
                                         <td>Subtotal:</td>
-                                        <td class="total-col" id="overall-total">₹{{sub_total|stringformat:'d'}}</td>
+                                        <td class="total-col" id="overall-total">₹{{sub_total|floatformat:2 }}</td>
                                     </tr><!-- End .summary-subtotal -->
                                     <tr class="summary-shipping">
                                         <td>Shipping:</td>
@@ -191,19 +191,19 @@
                                        </tr>
                                        <tr class="summary-shipping">
                                         <td>Coupon discount :&nbsp;</td>
-                                        <td>₹{{coupon_discount|floatformat:0}} </td>
+                                        <td>₹{{coupon_discount|floatformat:2 }} </td>
                                     </tr>
                                     {% endif %}
                                     <br>
                                     {% if total_saved_amount > 0 %}
                                         <tr class="summary-shipping">
                                             <td>Saved Amount (Offers):</td>
-                                            <td>₹{{ total_saved_amount|stringformat:'d' }}</td>
+                                            <td>₹{{ total_saved_amount|floatformat:2  }}</td>
                                         </tr><!-- End .summary-shipping -->
                                     {% endif %}
                                     <tr class="summary-total">
                                         <td>Total:</td>
-                                        <td id="grand_total_amount">{{total_amount|stringformat:'d'}}</td>
+                                        <td id="grand_total_amount">{{ total_amount|floatformat:2 }}</td>
                                     </tr><!-- End .summary-total -->
                                 </tbody>
                             </table><!-- End .table table-summary -->

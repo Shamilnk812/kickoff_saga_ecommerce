@@ -23,7 +23,9 @@ class Address(models.Model):
 
 class Wallet(models.Model) :
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    wallet = models.BigIntegerField(null=True)
+    # wallet = models.BigIntegerField(null=True)
+    wallet = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
+
 
 
 class PaymentHistory(models.Model):

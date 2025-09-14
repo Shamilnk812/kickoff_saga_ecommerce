@@ -22,7 +22,7 @@
                       {{ transaction.transaction_type }}
                     {% endif %}
                   </h5>
-                  <h5 class="text-primary mb-0">₹{{ transaction.amount |floatformat:0 }}</h5>
+                  <h5 class="text-primary mb-0">₹{{ transaction.amount |floatformat:2 }}</h5>
                 </div>
 
                 <p ><strong>Payment Mode:</strong> {{ transaction.payment_mode|capfirst }}</p>

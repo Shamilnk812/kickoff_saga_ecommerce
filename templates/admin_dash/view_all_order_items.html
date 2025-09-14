@@ -67,8 +67,8 @@
                       <td>{{item.product.name}}</td>
                       <td>{{item.size}}</td>
                       <td>{{item.quantity}}</td>
-                      <td>₹{{item.price | stringformat:'d'}}</td>
-                      <td>₹{{item.total_price | stringformat:'d'}}</td>
+                      <td>₹{{item.price | floatformat:2}}</td>
+                      <td>₹{{item.total_price | floatformat:2}}</td>
                       <td>
                          {% if item.status == 'Delivered' %}
                           <span class="text-success ">Delivered</span>

@@ -1,5 +1,5 @@
 <!-- otp_email_template.html -->
-
+{% comment %} 
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,5 +16,78 @@
         <p>This OTP is valid for the next 1 minute.</p>
         <p>Thank you for signing up!</p>
     </div>
+</body>
+</html> {% endcomment %}
+
+<!-- otp_email_template.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OTP for Sign Up</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f7f9fc;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 20px 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border: 1px solid #e6e6e6;
+    }
+    h2 {
+      color: #2c3e50;
+      margin-bottom: 5px;
+    }
+    h4 {
+      color: #555;
+      font-weight: normal;
+      margin-top: 0;
+    }
+    p {
+      color: #444;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .otp-box {
+      display: inline-block;
+      font-size: 22px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      color: #ffffff;
+      background: #007bff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #777;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Kickoffsaga Sign Up</h2>
+    <h4>OTP Verification</h4>
+    <p>Dear User,</p>
+    <p>Your OTP for sign up is:</p>
+    <div class="otp-box">{{ otp }}</div>
+    <p>This OTP is valid for the next <strong>1 minute</strong>.</p>
+    <p>Thank you for signing up!</p>
+    <div class="footer">
+      © 2025 Kickoffsaga. All rights reserved.
+    </div>
+  </div>
 </body>
 </html>

@@ -41,11 +41,11 @@
                                 <td>{{ item.product.name }}</td>
                                 <td>{{ item.size }}</td>
                                 <td>{{ item.quantity }}</td>
-                                <td>₹{{ item.price|floatformat:0}}</td>
-                                <td>₹{{ item.total_price|floatformat:0 }}</td>
+                                <td>₹{{ item.price|floatformat:2}}</td>
+                                <td>₹{{ item.total_price|floatformat:2 }}</td>
                                 <td>
                                   {% if item.offer_saved_amount%}
-                                    <span>₹{{item.offer_saved_amount|floatformat:0}}</span>
+                                    <span>₹{{item.offer_saved_amount|floatformat:2}}</span>
                                   {%else%}
                                       <span>No offer</span>
                                   {%endif%}
@@ -107,16 +107,16 @@
                         <!-- Order Summary Right -->
                         <div class="col-md-6">
                             <h5>Order Details</h5>
-                            <p><strong>Total:</strong> ₹{{ order.total_price |floatformat:0 }}</p>
+                            <p><strong>Total:</strong> ₹{{ order.total_price |floatformat:2 }}</p>
                             <p><strong>Payment Mode:</strong> {{ order.payment_mode }}</p>
                             <p><strong>Tracking No:</strong> {{ order.tracking_no }}</p>
                             <p><strong>Shipping Type:</strong> {{ order.shipping_type }}</p>
                             <p><strong>Shipping Cost:</strong> ₹{{ order.shipping_amount|floatformat:0}}</p>
                             {% if order.coupon_discount_amount %}
-                            <p><strong>Coupon Discount:</strong> ₹{{ order.coupon_discount_amount|floatformat:0 }}</p>
+                            <p><strong>Coupon Discount:</strong> ₹{{ order.coupon_discount_amount|floatformat:2 }}</p>
                             {% endif %}
                             {% if order.offer_discount_amount %}
-                            <p><strong>Offer Discount:</strong> ₹{{ order.offer_discount_amount|floatformat:0 }}</p>
+                            <p><strong>Offer Discount:</strong> ₹{{ order.offer_discount_amount|floatformat:2 }}</p>
                             {% endif %}
                         </div>
                     </div>

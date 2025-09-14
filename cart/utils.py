@@ -3,6 +3,10 @@ from account_user.validators import *
 from account_user.models import *
 from .models import *
 import random
+import math
+
+from decimal import Decimal, ROUND_HALF_UP
+
 
 
 
@@ -64,6 +68,7 @@ def apply_coupon(code, total_price):
 
 
 def create_order(user, address, total_price, post_data, coupon_discount, offer_saved_amount, shipping_type, shipping_amount):
+    print('createeee order total price', total_price)
     order = Order(
         user=user,
         fname=address.fname,
@@ -98,21 +103,22 @@ def generate_tracking_number():
 
 def create_order_item(order, cart_item, total_cart_amount, coupon_discount):
     product = cart_item.product
-    saved_amount = product.offer_save_amount() * cart_item.product_qty 
-    after_offer_discount = product.discounted_price()
-    total_per_item = after_offer_discount * cart_item.product_qty 
-    discount_share  = (total_per_item / total_cart_amount) * coupon_discount
-    final_price = total_per_item - discount_share 
-    final_price_for_each_item = final_price / cart_item.product_qty
-    
+    saved_amount = Decimal(str(product.offer_save_amount())) * Decimal(cart_item.product_qty)
+    after_offer_discount = Decimal(str(product.discounted_price()))
+    total_per_item = after_offer_discount * Decimal(cart_item.product_qty)
+    discount_share = (total_per_item / Decimal(str(total_cart_amount))) * Decimal(str(coupon_discount))
+    final_price = total_per_item - discount_share
+    final_price_for_each_item = final_price / Decimal(cart_item.product_qty)
+
     OrderItem.objects.create(
         order=order,
         product=product,
-        price=final_price_for_each_item,
+        price=float(final_price_for_each_item), 
         quantity=cart_item.product_qty,
         size=cart_item.size,
-        offer_saved_amount=saved_amount
+        offer_saved_amount=float(saved_amount)
     )
+    
     variant = Variants.objects.select_for_update().filter(
         product=cart_item.product, size=cart_item.size
     ).first()
@@ -133,6 +139,3 @@ def create_payment(user, order,transaction_type, amount, payment_mode, descripti
         payment_mode=payment_mode,
         description=description
     )
-    
-
-    

@@ -44,8 +44,8 @@
                     <td class="text-center">{{ item.product.name }}</td>
                     <td class="text-center">{{item.size}}</td>
                     <td class="text-center">{{ item.quantity }}</td>
-                    <td class="text-center">₹{{ item.price|floatformat:0 }}</td>
-                    <td class="text-center">₹{{ item.total_price|floatformat:0 }}</td>
+                    <td class="text-center">₹{{ item.price|floatformat:2 }}</td>
+                    <td class="text-center">₹{{ item.total_price|floatformat:2 }}</td>
 
                     <td class="text-center">
                         {% if item.status == 'Delivered' %}
@@ -110,7 +110,7 @@
                 <div class="col-md-6">
                   <h5 class="text-center">Order Summary</h5>
                   <hr>
-                  <h4>Grand Total:&nbsp;&nbsp; <span style="color: #7e8c9aff;" class="float-end">₹{{ order.total_price|floatformat:0 }}</span></h4>
+                  <h4>Grand Total:&nbsp;&nbsp; <span style="color: #7e8c9aff;" class="float-end">₹{{ order.total_price|floatformat:2 }}</span></h4>
                   <h6>Payment Mode:&nbsp;&nbsp; <span style="color: #7e8c9aff; "  class="ms-2" >{{ order.payment_mode }}</span></h6>
                   <h6>Tracking ID:&nbsp;&nbsp; <span style="color: #7e8c9aff; " >{{ order.tracking_no }}</span></h6>
                   <h6>Shipping Type:&nbsp;&nbsp; <span style="color: #7e8c9aff; " > {{ order.shipping_type }}</span></h6>
@@ -118,10 +118,10 @@
                     <h6>Shipping Amount:&nbsp;&nbsp; <span style="color: #7e8c9aff; " > ₹{{ order.shipping_amount|floatformat:0}}</span></h6>
                   {%endif%}
                   {% if order.coupon_discount_amount > 0 %}
-                  <h6>Coupon Discount:&nbsp;&nbsp; <span style="color: #7e8c9aff; " > ₹{{ order.coupon_discount_amount|floatformat:0 }}</span></h6>
+                  <h6>Coupon Discount:&nbsp;&nbsp; <span style="color: #7e8c9aff; " > ₹{{ order.coupon_discount_amount|floatformat:2 }}</span></h6>
                   {% endif %}
                   {% if order.offer_discount_amount > 0 %}
-                  <h6>Offer Discount:&nbsp;&nbsp; <span style="color: #7e8c9aff; " > ₹{{ order.offer_discount_amount|floatformat:0 }}</span></h6>
+                  <h6>Offer Discount:&nbsp;&nbsp; <span style="color: #7e8c9aff; " > ₹{{ order.offer_discount_amount|floatformat:2 }}</span></h6>
                   {% endif %}
                 </div>
               </div>

@@ -18,6 +18,7 @@ from django.views.decorators.cache import never_cache
 from django.db import transaction
 from cart.utils import create_payment
 from django.contrib.auth import logout
+from decimal import Decimal, ROUND_HALF_UP
 
 # ------------ View all orders (a specific user's order) -------------
 
@@ -78,7 +79,7 @@ def cancel_order(request, order_id):
                     messages.error(request, "No items in this order are eligible for cancellation.")
                     return redirect('order-detail', order_id=order_id)
 
-                user_wallet, created = Wallet.objects.get_or_create(user=request.user, defaults={'wallet': 0})
+                user_wallet, created = Wallet.objects.get_or_create(user=request.user)
 
                 # Product variants restoring
                 for item in cancellable_items:
@@ -91,11 +92,9 @@ def cancel_order(request, order_id):
 
                 # Update user wallet if that paid by razorypay or wallet
                 if order.payment_mode == 'paid by razorpay' or order.payment_mode == 'paid by wallet':
-                    if user_wallet.wallet is None:
-                        user_wallet.wallet = 0
                     total_refund = 0
                     for item in cancellable_items:
-                        item_total_price = item.price * item.quantity
+                        item_total_price = Decimal(item.price * item.quantity).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
                         user_wallet.wallet += item_total_price
                         total_refund += item_total_price
                     user_wallet.save()
@@ -164,12 +163,12 @@ def cancel_single_item(request, order_id):
                     item_variants.save()
 
                 # Update user wallet if that paid by razorypay or wallet
-                user_wallet, _ = Wallet.objects.get_or_create(user=request.user, defaults={'wallet': 0})
+                user_wallet, _ = Wallet.objects.get_or_create(user=request.user)
                 refund_amount = 0
                 if order.payment_mode in ['paid by razorpay', 'paid by wallet']:
-                    if user_wallet.wallet is None:
-                        user_wallet.wallet = 0
-                    refund_amount = order_item.price * order_item.quantity
+                    # if user_wallet.wallet is None:
+                    #     user_wallet.wallet = 0
+                    refund_amount = Decimal(order_item.price * order_item.quantity).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
                     user_wallet.wallet += refund_amount
                     user_wallet.save()
                     
@@ -197,7 +196,8 @@ def cancel_single_item(request, order_id):
         except OrderItem.DoesNotExist:
             messages.error(request, "The item you are trying to cancel does not exist in your order.")
         except Exception as e:
-            messages.error(request, "An unexpected error occurred during cancellation")
+            print('erorr', e)
+            messages.error(request, "An unexpected lkjjklklk;lerror occurred during cancellation")
 
         return redirect('order-detail', order_id=order_id)
     
@@ -259,7 +259,7 @@ def user_wallet(request):
     try:
         wallet_instance = Wallet.objects.get(user=request.user)
     except ObjectDoesNotExist:
-        wallet_instance = Wallet.objects.create(user=request.user, wallet=None)
+        wallet_instance = Wallet.objects.create(user=request.user)
 
     context = {'wallet': wallet_instance,'coupons':coupons}
     return render(request, 'user_account/wallet_show.html', context)

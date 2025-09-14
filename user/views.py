@@ -13,7 +13,7 @@ from admin_dash.models import Product,Category,Brand,Variants,Banner
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime,timedelta
 from django.http import HttpResponse
-from django.db.models import Q
+from django.db.models import Q , Case, When, F, DecimalField, Value
 from .utils import *
 from .forms import *
 
@@ -205,16 +205,23 @@ def store(request):
     query = request.GET.get('query')
     min_price = request.GET.get('min_price')
     max_price = request.GET.get('max_price')
+    sortby = request.GET.get('sortby') 
 
     products = Product.objects.filter(
         is_available=True,
         categories__is_available=True,
         brand__is_available=True,
         status='published'
+    ).annotate(
+        effective_price=Case(
+            When(
+                offer__isnull=False,
+                then=F("price") - (F("price") * F("offer__discount_percentage") / Value(100.0))
+            ),
+            default=F("price"),
+            output_field=DecimalField(max_digits=10, decimal_places=2)
+        )
     )
-
-    for product in products:
-        product.sizes_list = ",".join([str(v.size) for v in product.variants_set.all()])
 
     if query:
         products = products.filter(
@@ -252,6 +259,16 @@ def store(request):
             messages.error(request, "Price values must be positive.")
             return redirect('store')
         products = products.filter(price__gte=min_price, price__lte=max_price)
+    
+    if sortby == "price_low_high":
+        products = products.order_by("effective_price")
+    elif sortby == "price_high_low":
+        products = products.order_by("-effective_price")
+    elif sortby == "date":
+        products = products.order_by("-created_date")
+
+    for product in products:
+        product.sizes_list = ",".join([str(v.size) for v in product.variants_set.all()])
 
     paginator = Paginator(products, 8)
     page_number = request.GET.get('page')
@@ -268,6 +285,7 @@ def store(request):
         'query': query,
         'min_price': min_price,
         'max_price': max_price,
+        'sortby':sortby,
     }
 
     return render(request, 'store.html', context)

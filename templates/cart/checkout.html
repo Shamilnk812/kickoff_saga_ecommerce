@@ -132,12 +132,12 @@
                                         <tr>
                                             <td><a href="#">{{ item.product.name|truncatechars:20}} </a>&nbsp;&nbsp;  x {{item.product_qty}}</td>
                                            
-                                            <td>₹{{item.total_cost | stringformat:'d'}}</td>
+                                            <td>₹{{item.total_cost|floatformat:2 }}</td>
                                         </tr>
                                         {% endfor %}
                                             <tr class="summary-subtotal">
                                             <td>Subtotal:</td>
-                                            <td>₹{{sub_total | stringformat:'d'}}</td>
+                                            <td>₹{{sub_total | floatformat:2 }}</td>
                                         </tr><!-- End .summary-subtotal -->
 
                                         {% if applied_coupon %}
@@ -151,13 +151,13 @@
                                            </tr>
                                            <tr class="summary-shipping">
                                             <td>Coupon discount :&nbsp;</td>
-                                            <td>₹{{ coupon_discount|floatformat:0}} </td>
+                                            <td>₹{{ coupon_discount|floatformat:2}} </td>
                                         </tr>
                                         {% endif %}
                                         {% if total_saved_amount > 0 %}
                                         <tr class="summary-shipping">
                                             <td>Saved Amount (Offers):</td>
-                                            <td>₹{{ total_saved_amount|stringformat:'d' }}</td>
+                                            <td>₹{{ total_saved_amount|floatformat:2  }}</td>
                                         </tr><!-- End .summary-shipping -->
                                         {% endif %}
                                          
@@ -177,7 +177,7 @@
                                         <tr class="summary-total">
                                             <td>Total:</td>
                                             <input type="hidden" value="{{total_price}}" name="total_price">
-                                            <td>₹{{ total_price | stringformat:'d'}}</td>
+                                            <td>₹{{ total_price |floatformat:2 }}</td>
                                         </tr><!-- End .summary-total -->
                                       
                                     </tbody>
@@ -212,6 +212,7 @@
 {% if messages %}
   <script>
     {% for message in messages %}
+      console.log('hhhaifdjdsaifdsjfldksjflks')
       Swal.fire({
         icon: `{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% else %}info{% endif %}`,
         title: '{{ message.tags|capfirst }}',
@@ -243,24 +244,36 @@
 
   
     function payWithWallet() {
+        const totalPrice = document.querySelector('input[name="total_price"]').value;
+
         $.ajax({
             url: '{% url "check-wallet-balance" %}',
-            method: 'GET',
+            method: 'POST',
+            data: {
+                total_price: totalPrice,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
             success: function(response) {
                 if (response.success) {
                     // Wallet balance is sufficient, update the form and submit
                     $('input[name="payment_mode"]').val('paid by wallet');
                     $('#razorpay-form').submit();  
+                    console.log(response)
                 } else {
-                    alert('Wallet balance is not sufficient.');
+                    Swal.fire({
+                    icon: 'error',
+                    title: 'Insufficient Balance',
+                    text: 'Wallet balance is not sufficient.',
+                });
                 }
             },
             error: function() {
+               
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Insufficient Balance.',
-                    text: 'Wallet balance is not sufficient.',
-                });
+                icon: 'error',
+                title: 'Error',
+                text: 'Something went wrong while checking wallet balance.',
+            });
             }
         });
     }

@@ -28,6 +28,8 @@ from cart.utils import create_payment
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from .utils import *
+from decimal import Decimal, ROUND_HALF_UP
+
 
 
 
@@ -646,13 +648,11 @@ def manage_return_request(request, ord_id):
                         variant.save()
 
                     # Refund to wallet
-                    user_wallet, created = Wallet.objects.get_or_create(user=order.user, defaults={'wallet': 0})
-                    if user_wallet.wallet is None:
-                        user_wallet.wallet = 0
+                    user_wallet, created = Wallet.objects.get_or_create(user=order.user)
                     
                     refund_amount = 0
                     if order.payment_mode in ['paid by razorpay', 'paid by wallet']:
-                        total_price = order_item.price * order_item.quantity
+                        total_price = Decimal(order_item.price * order_item.quantity).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
                         user_wallet.wallet += total_price
                         refund_amount = total_price
                         user_wallet.save()
@@ -732,12 +732,12 @@ def cancel_single_order_by_admin(request, ord_id):
                     variant.save()
 
                 # Refund if needed
-                user_wallet, created = Wallet.objects.get_or_create(user=order.user, defaults={'wallet': 0})
-                if user_wallet.wallet is None:
-                    user_wallet.wallet = 0
+                user_wallet, created = Wallet.objects.get_or_create(user=order.user)
+                # if user_wallet.wallet is None:
+                #     user_wallet.wallet = 0
                 refund_amount = 0
                 if order.payment_mode in ['paid by razorpay', 'paid by wallet']:
-                    total_price = order_item.price * order_item.quantity
+                    total_price = Decimal(order_item.price * order_item.quantity).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
                     user_wallet.wallet += total_price
                     refund_amount = total_price
                     user_wallet.save()
@@ -797,9 +797,9 @@ def cancel_all_order_by_admin(request, ord_id):
             with transaction.atomic():
                 order = Order.objects.select_for_update().get(id=ord_id)
 
-                user_wallet, created = Wallet.objects.get_or_create(user=order.user, defaults={'wallet': 0})
-                if user_wallet is None:
-                    raise Exception("User wallet is invalid.")
+                user_wallet, created = Wallet.objects.get_or_create(user=order.user)
+                # if user_wallet is None:
+                #     raise Exception("User wallet is invalid.")
 
                 cancellable_statuses = ['Pending', 'Confirmed', 'Out for Shipping', 'Shipped', 'Out for Delivery']
                 order_items = OrderItem.objects.select_for_update().filter(order=order)
@@ -819,12 +819,12 @@ def cancel_all_order_by_admin(request, ord_id):
 
                 # Refund if payment was online
                 if order.payment_mode in ['paid by razorpay', 'paid by wallet']:
-                    if user_wallet.wallet is None:
-                        user_wallet.wallet = 0
+                    # if user_wallet.wallet is None:
+                    #     user_wallet.wallet = 0
                     
                     total_refund = 0
                     for item in cancellable_items:
-                        total_price_for_item = item.price * item.quantity
+                        total_price_for_item = Decimal(item.price * item.quantity).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
                         user_wallet.wallet += total_price_for_item
                         total_refund += total_price_for_item
                     user_wallet.save()
