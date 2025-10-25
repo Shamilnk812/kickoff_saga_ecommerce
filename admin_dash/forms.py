@@ -218,10 +218,7 @@ class ProductSizeVariantsForm(forms.ModelForm):
         return quantity
     
 
-        
-
 # --------- Coupon Form ---------
-
 class CouponForm(forms.ModelForm):
     
     coupon_code = forms.CharField( widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter Coupon code'}))
@@ -271,7 +268,6 @@ class CouponForm(forms.ModelForm):
 
 
 
-
 class CategoryOfferForm(forms.ModelForm) :
     class Meta:
         model   = Category
@@ -292,7 +288,6 @@ class CategoryOfferForm(forms.ModelForm) :
         if not Offer.objects.filter(pk=offer.pk).exists():
             raise forms.ValidationError('Offer is not valid')
         return offer
-
 
 
 
@@ -322,7 +317,6 @@ class ImageForm(forms.ModelForm):
     class Meta:
         model = Images
         fields = ['image']
-
 
 
 # ------------ Banner --------------
@@ -377,8 +371,6 @@ class BannerForm(forms.ModelForm) :
 
         return cleaned_data
     
-
-
 
 
 class OfferForm(forms.ModelForm) :
@@ -450,5 +442,4 @@ class OfferForm(forms.ModelForm) :
         if end_date <= timezone.now():
             raise forms.ValidationError("End date must be greater than the current date and time.")
 
-        return end_date
-       
+        return end_date  

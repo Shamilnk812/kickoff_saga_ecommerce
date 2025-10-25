@@ -1,11 +1,10 @@
-
 from django.db import models
 from admin_dash.models import Product,Variants
 from django.contrib.auth.models import User
 from .models import * 
 from decimal import Decimal
 from datetime import timedelta, date
-# Create your models here.
+
 
 
 class Coupon(models.Model) :
@@ -68,8 +67,6 @@ class Cart(models.Model) :
                 total += cart.total_cost
         return total
     
-    
-
 
 class Order(models.Model) :
     user = models.ForeignKey(User, on_delete=models.CASCADE)

@@ -117,7 +117,6 @@ class UserRegistrationForm(forms.ModelForm):
 
 
 
-
 # For the reset password 
 class CustomPasswordResetForm(PasswordResetForm):
     def __init__(self, *args, **kwargs):

@@ -1,8 +1,6 @@
 from django.urls import path
 from . import views
 from .forms import CustomPasswordResetForm, CustomSetPasswordForm
-
-
 from django.contrib.auth.views import (
     # LogoutView, 
     PasswordResetView, 

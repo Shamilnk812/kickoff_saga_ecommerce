@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from cart.models import *
 
-# Create your models here.
 
 
 class Address(models.Model):
@@ -20,12 +19,10 @@ class Address(models.Model):
     created_at = models.DateField(auto_now_add=True)
 
 
-
 class Wallet(models.Model) :
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     # wallet = models.BigIntegerField(null=True)
     wallet = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
-
 
 
 class PaymentHistory(models.Model):

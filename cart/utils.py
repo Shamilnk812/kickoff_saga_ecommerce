@@ -1,11 +1,9 @@
+import random
+from decimal import Decimal, ROUND_HALF_UP
 from django.contrib import messages
 from account_user.validators import *
 from account_user.models import *
 from .models import *
-import random
-import math
-
-from decimal import Decimal, ROUND_HALF_UP
 
 
 

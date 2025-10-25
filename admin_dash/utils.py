@@ -48,8 +48,7 @@ def send_account_unblock_email(user_email, username):
 
     send_mail(subject, message, from_email, recipient_list, fail_silently=False)
 
-
-    
+   
 
 def get_filtered_orders(time_range=None, start_date_input=None, end_date_input=None, status=None):
     """
@@ -114,9 +113,7 @@ def get_filtered_orders(time_range=None, start_date_input=None, end_date_input=N
 
 
 def get_period_label(period):
-    
     today = timezone.now().date()
-
     if period == 'month':
         start_date = today 
         return f"{calendar.month_name[today.month]} {start_date.year}"

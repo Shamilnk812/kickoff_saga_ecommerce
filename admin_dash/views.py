@@ -1,4 +1,5 @@
 import io
+import logging
 from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate,login,logout
@@ -30,75 +31,87 @@ from django.core.paginator import Paginator
 from .utils import *
 from decimal import Decimal, ROUND_HALF_UP
 
+logger = logging.getLogger(__name__)
 
 
 
 
 
-# ------------- Admin auth --------------
-
+# -------- Admin auth ---------
 def admin_log_in(request) :
-    if request.method == 'POST' :
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        if username.strip()=='' or password.strip()=='':
-            messages.error(request, 'Fields cannot be empty!')
-            return redirect('admin-login')
-        user = authenticate(username=username,password=password)
-        if user is not None :
-            if user.is_active :
-                if user.is_superuser :
-                    login(request, user)
-                    return redirect('dashboard')
-                else:
-                    messages.error(request, 'Sorry only admin is allowed to ') 
-                    return redirect('admin-login')   
+    try:
+        if request.method == 'POST' :
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+            if username.strip()=='' or password.strip()=='':
+                messages.error(request, 'Fields cannot be empty!')
+                return redirect('admin-login')
+            user = authenticate(username=username,password=password)
+            if user is not None :
+                if user.is_active :
+                    if user.is_superuser :
+                        login(request, user)
+                        return redirect('dashboard')
+                    else:
+                        messages.error(request, 'Sorry only admin is allowed to ') 
+                        return redirect('admin-login')   
+                else :
+                    messages.warning(request, 'Your account has been blocked')   
+                    return redirect('admin-login') 
             else :
-                messages.warning(request, 'Your account has been blocked')   
-                return redirect('admin-login') 
-        else :
-            messages.error( request, 'Bad credentials')
-        
-    return render(request, 'admin_login/admin_log_in.html')
+                messages.error( request, 'Bad credentials')
+            
+        return render(request, 'admin_login/admin_log_in.html')
+    
+    except Exception as e:
+        logger.error(f"Unexpected error during admin login: {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred. Please try again later.")
+        return redirect('admin-login')
 
 
 @never_cache
 @login_required(login_url='admin-login')
 def admin_logout(request) :
-    if 'username' in request.session:
-        del request.session['username'] 
-    logout(request)
-    messages.success(request, 'You are logged out !')
-    return redirect('admin-login')
+    try:
+        if 'username' in request.session:
+            del request.session['username'] 
+        logout(request)
+        messages.success(request, 'You are logged out !')
+        return redirect('admin-login')
+    
+    except Exception as e:
+        logger.error(f"Unexpected error during admin logout: {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred during logout. Please try again.")
+        return redirect('dashboard')
 
 
 
-# ------------------- User management ---------------------
-
+# ---------- User management ----------
 @login_required(login_url='admin-login')
 def user_management(request) :
-    query = request.GET.get('query')
-
-    if query:
-        users = User.objects.filter(
-            Q(username__icontains=query) | Q(email__icontains=query),
-            is_superuser=False
-            ).order_by('-id')
-    else:
-        users = User.objects.filter(is_superuser=False).order_by('-id')
-   
-    paginate_query = paginate_queryset(users, request, 8)
+    try:
+        query = request.GET.get('query')
+        if query:
+            users = User.objects.filter(
+                Q(username__icontains=query) | Q(email__icontains=query),
+                is_superuser=False
+                ).order_by('-id')
+        else:
+            users = User.objects.filter(is_superuser=False).order_by('-id')
     
-    context = {
-        'all_users': paginate_query,
-        'query': query,
-    }
-    return render(request, 'admin_dash/usermanage.html',context)
+        paginate_query = paginate_queryset(users, request, 8)
+        
+        context = {
+            'all_users': paginate_query,
+            'query': query,
+        }
+        return render(request, 'admin_dash/usermanage.html',context)
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in user_management view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while loading user management. Please try again later.")
+        return redirect('dashboard')
 
-# def search_user(request) :
-#     query = request.GET.get('query')
-#     users = User.objects.filter(username__icontains=query)
-#     return render(request, 'admin_dash/search_user.html',{'users':users})
 
 
 @login_required(login_url='admin-login')
@@ -121,12 +134,18 @@ def block_user(request, user_id):
             messages.warning(request, "Blocking reason must contain valid text, not just digits or special characters.")
             return redirect('user-management')
      
-    user.is_active = False
-    user.save()
-    # Send account block email
-    send_block_email(user.email, user.username, blocking_reason)
-    messages.success(request, f'{user.username} Account is blocked successfully')
-    return redirect('user-management')
+    try:
+        user.is_active = False
+        user.save()
+        # Send account block email
+        send_block_email(user.email, user.username, blocking_reason)
+        messages.success(request, f'{user.username} Account is blocked successfully')
+        return redirect('user-management')
+    
+    except Exception as e:
+        logger.error(f"Error blocking user {user_id}: {e}", exc_info=True)
+        messages.error(request, "Failed to block the user. Please try again later.")
+        return redirect('user-management')
 
 
 
@@ -138,81 +157,120 @@ def unblock_user(request, user_id):
         messages.warning('User data doesnot exist')
         return redirect('user-management')
     
-    user.is_active = True
-    user.save()
+    try:
+        user.is_active = True
+        user.save()
 
-    # send account unblok email 
-    send_account_unblock_email(user.email, user.username)
+        # send account unblok email 
+        send_account_unblock_email(user.email, user.username)
 
-    messages.success(request, f'{user.username} Account is unblocked')
-    return redirect('user-management')
+        messages.success(request, f'{user.username} Account is unblocked')
+        return redirect('user-management')
+    
+    except Exception as e:
+        logger.error(f"Error unblocking user {user_id}: {e}", exc_info=True)
+        messages.error(request, "Failed to unblock the user. Please try again later.")
+        return redirect('user-management')
 
 
 
 
-#-------------------- Category Management -----------------
+#---------------- Category Management -----------------
 
 @login_required(login_url='admin-login')
 def category_management(request) :
-    query = request.GET.get('query')
-    if query:     
-        all_category = Category.objects.filter(name__icontains=query).order_by('-id')
-    else:
-        all_category = Category.objects.all().order_by('-id')
+    try:
+        query = request.GET.get('query')
+        if query:     
+            all_category = Category.objects.filter(name__icontains=query).order_by('-id')
+        else:
+            all_category = Category.objects.all().order_by('-id')
 
-    paginate_query = paginate_queryset(all_category, request, 8)
+        paginate_query = paginate_queryset(all_category, request, 8)
 
-    context = {
-        'all_category':paginate_query,
-        'query':query,
-    }
-    return render(request, 'admin_dash/category_manage.html',context)   
+        context = {
+            'all_category':paginate_query,
+            'query':query,
+        }
+        return render(request, 'admin_dash/category_manage.html',context) 
+      
+    except Exception as e:
+        logger.error(f"Unexpected error in category_management view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while loading categories. Please try again later.")
+        return redirect('dashboard')
 
 
 
 @login_required(login_url='admin-login')
 def add_category(request):
-    if request.method == 'POST':
-        form = CategoryForm(request.POST)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Category added successfully ")
-            return redirect('category-management')
-    else:
-        form = CategoryForm()
+    try:
+        if request.method == 'POST':
+            form = CategoryForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Category added successfully ")
+                return redirect('category-management')
+        else:
+            form = CategoryForm()
 
-    return render(request, 'admin_dash/add_category.html', {'form': form})
+        return render(request, 'admin_dash/add_category.html', {'form': form})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in adding category : {e}", exc_info=True)
+        messages.error(request, "Something went wrong while adding the category. Please try again later.")
+        return render(request, 'admin_dash/add_category.html', {'form': CategoryForm()})
 
 
 
 @login_required(login_url='admin-login')
 def update_category(request,category_id):
-    category = get_object_or_404(Category, id=category_id)
+    try:
+        category = get_object_or_404(Category, id=category_id)
+    except Exception as e:
+        logger.error(f"Error fetching category with ID {category_id}: {e}", exc_info=True)
+        messages.error(request, "Category not found or an unexpected error occurred.")
+        return redirect('category-management')
 
-    if request.method == 'POST' :
-        form = CategoryForm(request.POST,instance=category)
-        if form.is_valid() :
-            category_name = form.cleaned_data['name']
-            form.save()
-            messages.success(request, f'{category_name} Category updated successfully')
-            return redirect('category-management')
-    else :
-        form =   CategoryForm(instance=category)
-        
-    return render(request, 'admin_dash/edit_category.html',{'form':form,'category': category})
+    try:
+        if request.method == 'POST' :
+            form = CategoryForm(request.POST,instance=category)
+            if form.is_valid() :
+                category_name = form.cleaned_data['name']
+                form.save()
+                messages.success(request, f'{category_name} Category updated successfully')
+                return redirect('category-management')
+        else :
+            form =   CategoryForm(instance=category)
+            
+        return render(request, 'admin_dash/edit_category.html',{'form':form,'category': category})
 
+    except Exception as e:
+        logger.error(f"Unexpected error in update_category view for ID {category_id}: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while updating the category. Please try again later.")
+        return redirect('category-management')
 
 
 @login_required(login_url='admin-login')
 def category_delete(request, category_id) :
-    category = get_object_or_404(Category, id=category_id)
-    category.is_available = not category.is_available
-    category.save()
-    if category.is_available :
-        messages.info(request, f'{category.name} Category is unblocked')
+    try:
+        category = get_object_or_404(Category, id=category_id)
+        category.is_available = not category.is_available
+        category.save()
+        if category.is_available :
+            messages.info(request, f'{category.name} Category is unblocked')
+            return redirect('category-management')
+        else :
+            messages.success(request, f'{category.name} Category is blocked')
+            return redirect('category-management')
+        
+    except Category.DoesNotExist:
+        messages.error(request, "This category does not exist.")
+        logger.warning(f"Attempted to block/unblock non-existent category ID: {category_id}")
         return redirect('category-management')
-    else :
-        messages.success(request, f'{category.name} Category is blocked')
+
+    except Exception as e:
+        logger.error(f"Unexpected error in category_delete (ID: {category_id}): {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred while updating category status.")
         return redirect('category-management')
     
 
@@ -222,64 +280,99 @@ def category_delete(request, category_id) :
 
 @login_required(login_url='admin-login')
 def brand_management(request) :
-    query = request.GET.get('query')
-    if query:
-        all_brands = Brand.objects.filter(name__icontains=query).order_by('-id')
-    else:
-        all_brands = Brand.objects.all().order_by('-id')
+    try:
+        query = request.GET.get('query')
+        if query:
+            all_brands = Brand.objects.filter(name__icontains=query).order_by('-id')
+        else:
+            all_brands = Brand.objects.all().order_by('-id')
+        
+        paginate_query = paginate_queryset(all_brands, request, 8)
+        context = {
+            'all_brands':paginate_query,
+            'query':query
+        }
+        return render(request, 'admin_dash/brand_management.html',context)
     
-    paginate_query = paginate_queryset(all_brands, request, 8)
-    context = {
-        'all_brands':paginate_query,
-        'query':query
-    }
-    return render(request, 'admin_dash/brand_management.html',context)
+    except Exception as e:
+        logger.error(f"Unexpected error in brand_management view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while loading brands. Please try again later.")
+        return redirect('dashboard')
 
 
 @login_required(login_url='admin-login')
 def add_brand(request) :
-    if request.method == 'POST' :
-        form = BrandForm(request.POST)
-        if form.is_valid():
-            form.save()
-            brand_name = form.cleaned_data['name']
-            messages.success(request, f'{brand_name} new brand succcessfully added')
-            return redirect('brand-management')
-    else:
-        form = BrandForm()
+    try:
+        if request.method == 'POST' :
+            form = BrandForm(request.POST)
+            if form.is_valid():
+                form.save()
+                brand_name = form.cleaned_data['name']
+                messages.success(request, f'{brand_name} new brand succcessfully added')
+                return redirect('brand-management')
+        else:
+            form = BrandForm()
 
-    return render(request, 'admin_dash/add_brand.html', {'form':form})
+        return render(request, 'admin_dash/add_brand.html', {'form':form})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in add_brand view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while adding the brand. Please try again later.")
+        return render(request, 'admin_dash/add_brand.html', {'form': BrandForm()})
 
 
 
 @login_required(login_url='admin-login')
 def update_brand(request, brand_id) :
-    brand = get_object_or_404(Brand, id=brand_id)
+    try:
+        brand = get_object_or_404(Brand, id=brand_id)
 
-    if request.method == 'POST' :
-        form = BrandForm(request.POST,instance=brand)
-        if form.is_valid():
-            form.save()
-            brand_name = form.cleaned_data['name']
-            messages.success(request, f'{brand_name} is updated successfully.')
-            return redirect('brand-management')
-    else:
-        form = BrandForm(instance=brand)
+    except Exception as e:
+        logger.error(f"Error fetching brand with ID {brand_id}: {e}", exc_info=True)
+        messages.error(request, "Brand not found or an unexpected error occurred.")
+        return redirect('brand-management')
 
-    return render(request, 'admin_dash/edit_brand.html', {'form':form, 'brand':brand})
+    try:
+        if request.method == 'POST' :
+            form = BrandForm(request.POST,instance=brand)
+            if form.is_valid():
+                form.save()
+                brand_name = form.cleaned_data['name']
+                messages.success(request, f'{brand_name} is updated successfully.')
+                return redirect('brand-management')
+        else:
+            form = BrandForm(instance=brand)
+
+        return render(request, 'admin_dash/edit_brand.html', {'form':form, 'brand':brand})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in update_brand view for ID {brand_id}: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while updating the brand. Please try again later.")
+        return redirect('brand-management')
 
 
 
 @login_required(login_url='admin-login')
 def delete_brand(request,brand_id):
-    brand = get_object_or_404(Brand, id=brand_id)
-    brand.is_available = not brand.is_available
-    brand.save()
-    if brand.is_available :
-        messages.success(request, f"{brand.name} brand is available")
+    try:
+        brand = get_object_or_404(Brand, id=brand_id)
+        brand.is_available = not brand.is_available
+        brand.save()
+        if brand.is_available :
+            messages.success(request, f"{brand.name} brand is available")
+            return redirect('brand-management')
+        else :
+            messages.warning(request, f"{brand.name} Barnd is blocked ")
+            return redirect('brand-management')
+    
+    except Brand.DoesNotExist:
+        messages.error(request, "The requested brand does not exist.")
+        logger.warning(f"Attempted to block/unblock non-existent brand ID: {brand_id}")
         return redirect('brand-management')
-    else :
-        messages.warning(request, f"{brand.name} Barnd is blocked ")
+
+    except Exception as e:
+        logger.error(f"Unexpected error in delete_brand (ID: {brand_id}): {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred while updating brand status.")
         return redirect('brand-management')
     
 
@@ -288,64 +381,97 @@ def delete_brand(request,brand_id):
 
 @login_required(login_url='admin-login')
 def product_management(request) :
-    query = request.GET.get('query')
-    if query:
-        all_products = Product.objects.filter(name__icontains=query).order_by('-id')
-    else:
-        all_products = Product.objects.all().order_by('-id')
+    try:
+        query = request.GET.get('query')
+        if query:
+            all_products = Product.objects.filter(name__icontains=query).order_by('-id')
+        else:
+            all_products = Product.objects.all().order_by('-id')
 
-    paginate_query = paginate_queryset(all_products, request, 10)
-    context = { 
-        'all_products': paginate_query,
-        'query':query
-        }
-    return render(request, 'admin_dash/product_management.html',context)
+        paginate_query = paginate_queryset(all_products, request, 10)
+        context = { 
+            'all_products': paginate_query,
+            'query':query
+            }
+        return render(request, 'admin_dash/product_management.html',context)
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in product_management view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while loading products. Please try again later.")
+        return redirect('dashboard')
 
 
 @login_required(login_url='admin-login')
 def add_product(request):
-    if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES)  
-        if form.is_valid():
-            product_name = form.cleaned_data['name']
-            form.save()
-            messages.success(request, f"{product_name} New product added successfully.")
-            return redirect('product-management')
-    else:
-        form = ProductForm()  
+    try:
+        if request.method == 'POST':
+            form = ProductForm(request.POST, request.FILES)  
+            if form.is_valid():
+                product_name = form.cleaned_data['name']
+                form.save()
+                messages.success(request, f"{product_name} New product added successfully.")
+                return redirect('product-management')
+        else:
+            form = ProductForm()  
 
-    return render(request, 'admin_dash/add_product.html', {'form': form}) 
+        return render(request, 'admin_dash/add_product.html', {'form': form}) 
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in add_product view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while adding the product. Please try again later.")
+        return render(request, 'admin_dash/add_product.html', {'form': ProductForm()})
 
 
 @login_required(login_url='admin-login')
 def update_product(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
+    try:
+        product = get_object_or_404(Product, id=product_id)
 
-    if request.method == 'POST':
-        form = ProductForm(request.POST, instance=product)
-        if form.is_valid():
-            product_name = form.cleaned_data['name']
-            form.save()            
-            messages.success(request, f'{product_name} product is updated successfully.')
-            return redirect('product-management')
-    else:
-        form = ProductForm(instance=product)
+    except Exception as e:
+        logger.error(f"Error fetching product with ID {product_id}: {e}", exc_info=True)
+        messages.error(request, "Product not found or an unexpected error occurred.")
+        return redirect('product-management')
 
-    return render(request, 'admin_dash/edit_product.html', {'form': form, 'product': product})
+    try:
+        if request.method == 'POST':
+            form = ProductForm(request.POST, instance=product)
+            if form.is_valid():
+                product_name = form.cleaned_data['name']
+                form.save()            
+                messages.success(request, f'{product_name} product is updated successfully.')
+                return redirect('product-management')
+        else:
+            form = ProductForm(instance=product)
 
+        return render(request, 'admin_dash/edit_product.html', {'form': form, 'product': product})
 
+    except Exception as e:
+        logger.error(f"Unexpected error in update_product view for ID {product_id}: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while updating the product. Please try again later.")
+        return redirect('product-management')
 
 
 @login_required(login_url='admin-login')
 def product_delete(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    product.is_available = not product.is_available  
-    product.save()
-    if product.is_available :
-        messages.success(request, f'{product.name} Product is available')
+    try:
+        product = get_object_or_404(Product, id=product_id)
+        product.is_available = not product.is_available  
+        product.save()
+        if product.is_available :
+            messages.success(request, f'{product.name} Product is available')
+            return redirect('product-management')
+        else :
+            messages.warning(request, f'{product.name} product is blocked')
+            return redirect('product-management')
+    
+    except Product.DoesNotExist:
+        messages.error(request, "The requested product does not exist.")
+        logger.warning(f"Attempted to block/unblock non-existent product ID: {product_id}")
         return redirect('product-management')
-    else :
-        messages.warning(request, f'{product.name} product is blocked')
+
+    except Exception as e:
+        logger.error(f"Unexpected error in product_delete (ID: {product_id}): {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred while updating product status.")
         return redirect('product-management')
 
 
@@ -357,24 +483,29 @@ def publish_products(request, product_id):
     except Product.DoesNotExist:
         messages.warning(request, 'product is not found')
         return redirect('product-management')
-    
-    if product.status == 'published':
-        messages.warning(request, f'{product.name} is already published.')
-        return redirect('product-management')
-    
-    if not Variants.objects.filter(product=product).exists():
-        messages.warning(request, 'Please add product variant before publishing.')
-        return redirect('product-management')
+    try:
+        if product.status == 'published':
+            messages.warning(request, f'{product.name} is already published.')
+            return redirect('product-management')
         
-    if not Images.objects.filter(product=product).exists():
-        messages.warning(request, 'Please add product photos before publishing.')
+        if not Variants.objects.filter(product=product).exists():
+            messages.warning(request, 'Please add product variant before publishing.')
+            return redirect('product-management')
+            
+        if not Images.objects.filter(product=product).exists():
+            messages.warning(request, 'Please add product photos before publishing.')
+            return redirect('product-management')
+        
+        product.status = 'published'
+        product.save()
+        
+        messages.success(request, f'{product.name} has been successfully published.')
         return redirect('product-management')
     
-    product.status = 'published'
-    product.save()
-    
-    messages.success(request, f'{product.name} has been successfully published.')
-    return redirect('product-management')
+    except Exception as e:
+        logger.error(f"Unexpected error while publishing product ID {product_id}: {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred while publishing the product. Please try again later.")
+        return redirect('product-management')
     
 
 
@@ -382,111 +513,156 @@ def publish_products(request, product_id):
 
 @login_required(login_url='admin-login')
 def show_variants(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    image = Images.objects.filter(product=product)
-    variants = Variants.objects.filter(product=product)
+    try:
+        product = get_object_or_404(Product, id=product_id)
+        image = Images.objects.filter(product=product)
+        variants = Variants.objects.filter(product=product)
 
-    context = {
-        'product':product,
-        'image':image,
-        'variants':variants
-    }
-    return render(request, 'admin_dash/variants_product.html', context)
+        context = {
+            'product':product,
+            'image':image,
+            'variants':variants
+        }
+        return render(request, 'admin_dash/variants_product.html', context)
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in show_variants view for product ID {product_id}: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while loading product details.")
+        return redirect('product-management')
 
 
 # ----------- Upload product image with fixed size -----
 @login_required(login_url='admin-login')
 def add_image_product(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
+    try:
+        product = get_object_or_404(Product, id=product_id)
 
-    if request.method == 'POST':
-        form = ImageForm(request.POST, request.FILES)
-        if form.is_valid():
-            # Open the uploaded image
-            uploaded_image = Image.open(form.cleaned_data['image'])
-            # Resize the image
-            resized_image = uploaded_image.resize((600, 700), Image.BICUBIC)
-            # Convert the image to RGB (uncomment the line below if needed)
-            resized_image = resized_image.convert('RGB')
-            # Create an in-memory buffer to store the resized image
-            buffer = io.BytesIO()
-            # Save the resized image to the buffer
-            resized_image.save(buffer, format='JPEG')  # You can change the format if needed
+        if request.method == 'POST':
+            form = ImageForm(request.POST, request.FILES)
+            if form.is_valid():
+                # Open the uploaded image
+                uploaded_image = Image.open(form.cleaned_data['image'])
+                # Resize the image
+                resized_image = uploaded_image.resize((600, 700), Image.BICUBIC)
+                # Convert the image to RGB (uncomment the line below if needed)
+                resized_image = resized_image.convert('RGB')
+                # Create an in-memory buffer to store the resized image
+                buffer = io.BytesIO()
+                # Save the resized image to the buffer
+                resized_image.save(buffer, format='JPEG')  # You can change the format if needed
 
-            # Create a new Image instance and save the resized image to the 'image' field
-            image = form.save(commit=False)
-            image.product = product
+                # Create a new Image instance and save the resized image to the 'image' field
+                image = form.save(commit=False)
+                image.product = product
 
-            # Save the resized image to the 'image' field
-            image.image.save('resize.jpg', buffer, save=False)
-            image.save()
+                # Save the resized image to the 'image' field
+                image.image.save('resize.jpg', buffer, save=False)
+                image.save()
 
-            messages.success(request, 'Product Image added successfully')
-            return redirect('show-variants', product_id=product_id)
+                messages.success(request, 'Product Image added successfully')
+                return redirect('show-variants', product_id=product_id)
 
-    else:
-        form = ImageForm()
+        else:
+            form = ImageForm()
 
-    return render(request, 'admin_dash/add_image_product.html', {'form': form, 'product': product})
+        return render(request, 'admin_dash/add_image_product.html', {'form': form, 'product': product})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in add_image_product view for product ID {product_id}: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while adding product image. Please try again later.")
+        return render(request, 'admin_dash/add_image_product.html', {'form': ImageForm(), 'product': product})
 
 
 @login_required(login_url='admin-login')
 def delete_product_image(request,img_id, product_id) :
-    image = get_object_or_404(Images, id=img_id, product=product_id)
-    image.delete()
-    messages.success(request, 'Product Image Removed')
-    return redirect('show-variants', product_id=product_id)
+    try:
+        image = get_object_or_404(Images, id=img_id, product=product_id)
+        image.delete()
+        messages.success(request, 'Product Image Removed')
+        return redirect('show-variants', product_id=product_id)
+
+    except Images.DoesNotExist:
+        messages.error(request, "The requested image does not exist.")
+        logger.warning(f"Attempted to delete non-existent image ID {img_id} for product ID {product_id}.")
+        return redirect('show-variants', product_id=product_id)
+
+    except Exception as e:
+        messages.error(request, "An unexpected error occurred while deleting the image.")
+        logger.error(f"Unexpected error deleting image ID {img_id} for product ID {product_id}: {e}", exc_info=True)
+        return redirect('show-variants', product_id=product_id)
 
 
 #-----------Add product size variants ----------
-
 @login_required(login_url='admin-login')
 def add_size_and_quantity(request, product_id) :
-    product = get_object_or_404(Product, id=product_id)
+    try:
+        product = get_object_or_404(Product, id=product_id)
 
-    if request.method == 'POST' :
-        form = ProductSizeVariantsForm(request.POST,  initial={'product': product})
-        if form.is_valid():
-            variant = form.save(commit=False)
-            variant.product = product
-            variant.save()
-            messages.success(request, 'New size and quantity is updated')
-            return redirect('show-variants',product_id=product_id)
-    else:
-        form = ProductSizeVariantsForm()
-    return render(request, 'admin_dash/add_size_quantity.html', {'form':form})
+        if request.method == 'POST' :
+            form = ProductSizeVariantsForm(request.POST,  initial={'product': product})
+            if form.is_valid():
+                variant = form.save(commit=False)
+                variant.product = product
+                variant.save()
+                messages.success(request, 'New size and quantity is updated')
+                return redirect('show-variants',product_id=product_id)
+        else:
+            form = ProductSizeVariantsForm()
+        return render(request, 'admin_dash/add_size_quantity.html', {'form':form})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in add_size_and_quantity view for product ID {product_id}: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while adding size and quantity. Please try again later.")
+        return redirect('product-management')
 
 
 @login_required(login_url='admin-login')
 def update_size_of_quantity(request, variant_id):
-    variant = get_object_or_404(Variants, id=variant_id)
-    if request.method == 'POST':
-        form = ProductSizeVariantsForm(request.POST, instance=variant, initial={'product': variant.product})
-        if form.is_valid():
-            form.save()
-            messages.success(request, f'{variant.product.name} product size variant updated successfully')
-            return redirect('show-variants',product_id=variant.product.id)
-        
-    else:
-        form = ProductSizeVariantsForm(instance=variant, initial={'product': variant.product})
-    return render(request, 'admin_dash/edit_size_quantity.html', {'form':form, 'variant':variant})
+    try:
+        variant = get_object_or_404(Variants, id=variant_id)
+        if request.method == 'POST':
+            form = ProductSizeVariantsForm(request.POST, instance=variant, initial={'product': variant.product})
+            if form.is_valid():
+                form.save()
+                messages.success(request, f'{variant.product.name} product size variant updated successfully')
+                return redirect('show-variants',product_id=variant.product.id)
+            
+        else:
+            form = ProductSizeVariantsForm(instance=variant, initial={'product': variant.product})
+        return render(request, 'admin_dash/edit_size_quantity.html', {'form':form, 'variant':variant})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in update_size_of_quantity view for variant ID {variant_id}: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while updating the size variant. Please try again later.")
+        return redirect('product-management')
 
 
 
 @login_required(login_url='admin-login')
 def block_product_size(request, variant_id, product_id) :
-    variant = get_object_or_404(Variants, id=variant_id, product=product_id)
-    if variant.is_available == True:
-        variant.is_available = False
-        variant.save()
-        messages.success(request, f'product size {variant.size } is blocked.')
-        product_id = variant.product.id
+    try:
+        variant = get_object_or_404(Variants, id=variant_id, product=product_id)
+        if variant.is_available == True:
+            variant.is_available = False
+            variant.save()
+            messages.success(request, f'product size {variant.size } is blocked.')
+            product_id = variant.product.id
+            return redirect(reverse('show-variants', args=[product_id]))
+        else:
+            variant.is_available = True
+            variant.save()
+            messages.success(request, f'product size {variant.size } is unblocked.')
+            product_id = variant.product.id
+            return redirect(reverse('show-variants', args=[product_id]))
+    
+    except Variants.DoesNotExist:
+        messages.error(request, "The requested product size variant does not exist.")
+        logger.warning(f"Attempted to block/unblock non-existent variant ID {variant_id} for product ID {product_id}.")
         return redirect(reverse('show-variants', args=[product_id]))
-    else:
-        variant.is_available = True
-        variant.save()
-        messages.success(request, f'product size {variant.size } is unblocked.')
-        product_id = variant.product.id
+
+    except Exception as e:
+        messages.error(request, "An unexpected error occurred while updating product size status.")
+        logger.error(f"Unexpected error in block_product_size for variant ID {variant_id}: {e}", exc_info=True)
         return redirect(reverse('show-variants', args=[product_id]))
 
 
@@ -495,124 +671,147 @@ def block_product_size(request, variant_id, product_id) :
 
 @login_required(login_url='admin-login')
 def all_orders(request) :
-    query = request.GET.get('query','').strip()
-    print('query', query)
-    if query:
-        all_orders = Order.objects.filter(
-            Q(tracking_no__icontains=query) | Q(fname__icontains=query) | Q(lname__icontains=query)    
-        ).order_by('-created_at','-id')
-    else:
-        all_orders = Order.objects.order_by('-created_at','-id')
+    try:
+        query = request.GET.get('query','').strip()
+        print('query', query)
+        if query:
+            all_orders = Order.objects.filter(
+                Q(tracking_no__icontains=query) | Q(fname__icontains=query) | Q(lname__icontains=query)    
+            ).order_by('-created_at','-id')
+        else:
+            all_orders = Order.objects.order_by('-created_at','-id')
 
-    paginate_query = paginate_queryset(all_orders, request, 10)
-    orders_with_return = set(OrderItem.objects.filter(status='Return Requested').values_list('order_id', flat=True))
-    context = {
-        'all_orders': paginate_query,
-        'orders_with_return': orders_with_return,
-        }
-    return render(request, 'admin_dash/all_orders.html',context)
+        paginate_query = paginate_queryset(all_orders, request, 10)
+        orders_with_return = set(OrderItem.objects.filter(status='Return Requested').values_list('order_id', flat=True))
+        context = {
+            'all_orders': paginate_query,
+            'orders_with_return': orders_with_return,
+            }
+        return render(request, 'admin_dash/all_orders.html',context)
+
+    except Exception as e:
+        logger.error(f"Unexpected error in all_orders view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while loading orders. Please try again later.")
+        return redirect('dashboard')
 
 
 
 @login_required(login_url='admin-login')
 def view_all_order_items(request):
-    time_range = request.GET.get('time_range', '')
-    status = request.GET.get('status', '')
-  
-    if status:
-        all_orders, total_amount_or_error = get_filtered_orders(time_range=time_range, status=status)
-    else:
-        all_orders, total_amount_or_error = get_filtered_orders(time_range=time_range)
+    try:
+        time_range = request.GET.get('time_range', '')
+        status = request.GET.get('status', '')
+    
+        if status:
+            all_orders, total_amount_or_error = get_filtered_orders(time_range=time_range, status=status)
+        else:
+            all_orders, total_amount_or_error = get_filtered_orders(time_range=time_range)
 
-    paginate_query = paginate_queryset(all_orders, request, 10)
-    context = {
-        'all_order_items':paginate_query,
-        'status_choices': OrderItem.STATUS_CHOICES,
-        'selected_time_range': time_range,
-        'selected_status': status
-    }
-    return render(request, 'admin_dash/view_all_order_items.html', context )
-
+        paginate_query = paginate_queryset(all_orders, request, 10)
+        context = {
+            'all_order_items':paginate_query,
+            'status_choices': OrderItem.STATUS_CHOICES,
+            'selected_time_range': time_range,
+            'selected_status': status
+        }
+        return render(request, 'admin_dash/view_all_order_items.html', context )
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in view_all_order_items view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while loading order items. Please try again later.")
+        return redirect('all-orders')
 
 
 @login_required(login_url='admin-login')
 def view_single_order(request,ord_id):
-    order = Order.objects.filter(id=ord_id).first()
-    orderitems = OrderItem.objects.filter(order=order).order_by('-id')
-     
-    items_with_forward_statuses = []
-    for item in orderitems:
-        if item.status in STATUS_FLOW:
-            current_index = STATUS_FLOW.index(item.status)
-            forward_statuses = STATUS_FLOW[current_index+1:]
-        else:
-            forward_statuses = []  
-        items_with_forward_statuses.append({
-            'item': item,
-            'forward_statuses': forward_statuses
-        })
+    try:
+        order = Order.objects.filter(id=ord_id).first()
+        orderitems = OrderItem.objects.filter(order=order).order_by('-id')
+        
+        items_with_forward_statuses = []
+        for item in orderitems:
+            if item.status in STATUS_FLOW:
+                current_index = STATUS_FLOW.index(item.status)
+                forward_statuses = STATUS_FLOW[current_index+1:]
+            else:
+                forward_statuses = []  
+            items_with_forward_statuses.append({
+                'item': item,
+                'forward_statuses': forward_statuses
+            })
 
-    cancellable_statuses = ['Pending', 'Confirmed', 'Out for Shipping', 'Shipped', 'Out for Delivery']
-    cancellable_items = orderitems.filter(status__in=cancellable_statuses)
-    can_cancel_all = cancellable_items.exists()
+        cancellable_statuses = ['Pending', 'Confirmed', 'Out for Shipping', 'Shipped', 'Out for Delivery']
+        cancellable_items = orderitems.filter(status__in=cancellable_statuses)
+        can_cancel_all = cancellable_items.exists()
 
-    context={
-        'order':order,
-        'orderitems':orderitems,
-        'orderitems_with_statuses': items_with_forward_statuses,
-        'can_cancel_all':can_cancel_all,
-    }
-    return render(request, 'admin_dash/view_single_order.html',context)
-
+        context={
+            'order':order,
+            'orderitems':orderitems,
+            'orderitems_with_statuses': items_with_forward_statuses,
+            'can_cancel_all':can_cancel_all,
+        }
+        return render(request, 'admin_dash/view_single_order.html',context)
+    
+    except Exception as e:
+        messages.error(request, "An unexpected error occurred while loading the order details.")
+        logger.error(f"Unexpected error in view_single_order for order ID {ord_id}: {e}", exc_info=True)
+        return redirect('all-orders')
+        
 
 
 #------------- Update order item status -------------
 
 @login_required(login_url='admin-login')
 def update_single_order_status(request, ord_id):
-    if request.method == 'POST':
-        item_id = request.POST.get('item_id').strip()
-        new_status = request.POST.get('status').strip()
-        
-        if not item_id or not new_status:
-            messages.warning(request, "Item ID and status are required.")
-            return redirect('view-single-order', ord_id=ord_id)
-        
-        if new_status not in STATUS_FLOW:
-            messages.warning(request, "Invalid status selected. You can only update to a forward status.")
-            return redirect('view-single-order', ord_id=ord_id)
-        
-        
-        try:
-            order = Order.objects.get(id=ord_id)
-        except Order.DoesNotExist:
-            messages.warning(request, "Something wrong. Order does not exist.")
-            return redirect('view-single-order', ord_id=ord_id)
-        
-        try:
-            order_item = OrderItem.objects.get(order=order, id=item_id)
-        except OrderItem.DoesNotExist:
-            messages.warning(request, "Order item not found.")
-            return redirect('view-single-order', ord_id=ord_id)
-        
-        # prevent status to previous status
-        current_status_index = STATUS_FLOW.index(order_item.status) if order_item.status in STATUS_FLOW else -1 
-        new_status_index = STATUS_FLOW.index(new_status) 
+    try:
+        if request.method == 'POST':
+            item_id = request.POST.get('item_id').strip()
+            new_status = request.POST.get('status').strip()
+            
+            if not item_id or not new_status:
+                messages.warning(request, "Item ID and status are required.")
+                return redirect('view-single-order', ord_id=ord_id)
+            
+            if new_status not in STATUS_FLOW:
+                messages.warning(request, "Invalid status selected. You can only update to a forward status.")
+                return redirect('view-single-order', ord_id=ord_id)
+            
+            
+            try:
+                order = Order.objects.get(id=ord_id)
+            except Order.DoesNotExist:
+                messages.warning(request, "Something wrong. Order does not exist.")
+                return redirect('view-single-order', ord_id=ord_id)
+            
+            try:
+                order_item = OrderItem.objects.get(order=order, id=item_id)
+            except OrderItem.DoesNotExist:
+                messages.warning(request, "Order item not found.")
+                return redirect('view-single-order', ord_id=ord_id)
+            
+            # prevent status to previous status
+            current_status_index = STATUS_FLOW.index(order_item.status) if order_item.status in STATUS_FLOW else -1 
+            new_status_index = STATUS_FLOW.index(new_status) 
 
-        if new_status_index <= current_status_index:
-            messages.warning(request, f"You cannot move status backward from '{order_item.status}' to '{new_status}'.")
-            return redirect('view-single-order', ord_id=ord_id)
-        
-        if new_status == "Delivered":
-            order_item.return_valid_until = date.today() + timedelta(days=7)
+            if new_status_index <= current_status_index:
+                messages.warning(request, f"You cannot move status backward from '{order_item.status}' to '{new_status}'.")
+                return redirect('view-single-order', ord_id=ord_id)
+            
+            if new_status == "Delivered":
+                order_item.return_valid_until = date.today() + timedelta(days=7)
 
-        order_item.status = new_status
-        order_item.save()
-        messages.success(request, f"Order item status updated to '{new_status}'.")
-        return redirect('view-single-order',ord_id=ord_id)
+            order_item.status = new_status
+            order_item.save()
+            messages.success(request, f"Order item status updated to '{new_status}'.")
+            return redirect('view-single-order',ord_id=ord_id)
+        
+        messages.warning(request, "Invalid request method.")
+        return redirect('view-single-order', ord_id=ord_id)
     
-    messages.warning(request, "Invalid request method.")
-    return redirect('view-single-order', ord_id=ord_id)
+    except Exception as e:
+        messages.error(request, "An unexpected error occurred while updating the order status.")
+        logger.error(f"Unexpected error in update_single_order_status for order ID {ord_id}: {e}", exc_info=True)
+        return redirect('view-single-order', ord_id=ord_id)
 
 
 
@@ -776,7 +975,7 @@ def cancel_single_order_by_admin(request, ord_id):
 
 
 
-#-----------------------  Cancel all order ------------------
+#---------------  Cancel all order ------------------
 
 @login_required(login_url='admin-login')
 def cancel_all_order_by_admin(request, ord_id):
@@ -862,175 +1061,262 @@ def cancel_all_order_by_admin(request, ord_id):
 
 
 
-# -------------------- Coupon Management ----------------
+# ------------ Coupon Management -----------
 
 @login_required(login_url='admin-login')
 def view_coupons(request) :
-    query = request.GET.get('query', '').strip()
-    if query:
-        all_coupons = Coupon.objects.filter(coupon_code__icontains=query).order_by('-id')
-    else:
-        all_coupons = Coupon.objects.all().order_by('-id')
-    paginate_query = paginate_queryset(all_coupons, request, 8)
+    try:
+        query = request.GET.get('query', '').strip()
+        if query:
+            all_coupons = Coupon.objects.filter(coupon_code__icontains=query).order_by('-id')
+        else:
+            all_coupons = Coupon.objects.all().order_by('-id')
+        paginate_query = paginate_queryset(all_coupons, request, 8)
 
-    return render(request, 'admin_dash/coupon_management.html', {'all_coupons':paginate_query})
+        return render(request, 'admin_dash/coupon_management.html', {'all_coupons':paginate_query})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in view_coupons view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while loading coupons. Please try again later.")
+        return redirect('dashboard')
 
 
 @login_required(login_url='admin-login')
 def add_coupon(request) :
-    if request.method=='POST' :
-        form = CouponForm(request.POST)
-        if form.is_valid():
-            coupon_code = form.cleaned_data['coupon_code']
-            form.save()
-            messages.success(request, f'{coupon_code} new coupon is created successfully.')
-            return redirect('view-coupons')
-    else:
-        form = CouponForm()
-    return render(request, 'admin_dash/add_coupon.html', {'form':form})
+    try:
+        if request.method=='POST' :
+            form = CouponForm(request.POST)
+            if form.is_valid():
+                coupon_code = form.cleaned_data['coupon_code']
+                form.save()
+                messages.success(request, f'{coupon_code} new coupon is created successfully.')
+                return redirect('view-coupons')
+        else:
+            form = CouponForm()
+        return render(request, 'admin_dash/add_coupon.html', {'form':form})
+    
+    except Exception as e:
+        messages.error(request, "An unexpected error occurred while creating the coupon.")
+        logger.error(f"Unexpected error in add_coupon view: {e}", exc_info=True)
+        return render(request, 'admin_dash/add_coupon.html', {'form': CouponForm()})
 
 
 @login_required(login_url='admin-login')
 def delete_coupon(request,c_id) :
-    coupon = Coupon.objects.get(id=c_id) 
-    if coupon.is_active==True :
-        coupon.is_active=False
-        coupon.save()
-        messages.warning(request, 'Coupon is blocked')
+    try:
+        coupon = Coupon.objects.get(id=c_id) 
+        if coupon.is_active==True :
+            coupon.is_active=False
+            coupon.save()
+            messages.warning(request, 'Coupon is blocked')
+            return redirect('view-coupons')
+        else :
+            coupon.is_active=True
+            coupon.save()
+            messages.success(request, 'Coupon is Unblocked')
+            return redirect('view-coupons') 
+    
+    except Exception as e:
+        messages.error(request, "An unexpected error occurred while updating the coupon.")
+        logger.error(f"Unexpected error in delete_coupon view for coupon ID {c_id}: {e}", exc_info=True)
         return redirect('view-coupons')
-    else :
-        coupon.is_active=True
-        coupon.save()
-        messages.success(request, 'Coupon is Unblocked')
-        return redirect('view-coupons') 
+        
     
-    
-# ------------------- Offer Management ------------------
+# ----------------- Offer Management ------------------
 @login_required(login_url='admin-login')
 def view_offers(request) :
-    query = request.GET.get('query', '').strip()
-    if query:
-        all_offers = Offer.objects.filter(title__icontains=query).order_by('-start_date', '-id')
-    else:
-        all_offers = Offer.objects.all().order_by('-start_date', '-id')
-    paginate_query = paginate_queryset(all_offers, request, 8)
-    return render(request, 'admin_dash/offer_management.html',{'all_offers':paginate_query, 'query':query})
+    try:
+        query = request.GET.get('query', '').strip()
+        if query:
+            all_offers = Offer.objects.filter(title__icontains=query).order_by('-start_date', '-id')
+        else:
+            all_offers = Offer.objects.all().order_by('-start_date', '-id')
+        paginate_query = paginate_queryset(all_offers, request, 8)
+        return render(request, 'admin_dash/offer_management.html',{'all_offers':paginate_query, 'query':query})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in view_offers view: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while loading offers. Please try again later.")
+        return redirect('dashboard')
 
 
 @login_required(login_url='admin-login')
 def add_offer(request):
-    if request.method == 'POST':
-        form = OfferForm(request.POST)
-        if form.is_valid():
-            offer_title = form.cleaned_data['title']
-            form.save()
-            messages.success(request, f"{offer_title} new offer added successfully.")
-            return redirect('view-offers')
-    else:
-        form = OfferForm()
+    try:
+        if request.method == 'POST':
+            form = OfferForm(request.POST)
+            if form.is_valid():
+                offer_title = form.cleaned_data['title']
+                form.save()
+                messages.success(request, f"{offer_title} new offer added successfully.")
+                return redirect('view-offers')
+        else:
+            form = OfferForm()
 
-    return render(request, 'admin_dash/add_offer.html', {'form': form})
+        return render(request, 'admin_dash/add_offer.html', {'form': form})
+    
+    except Exception as e:
+        messages.error(request, "An unexpected error occurred while adding the offer.")
+        logger.error(f"Unexpected error in add_offer view: {e}", exc_info=True)
+        return render(request, 'admin_dash/add_offer.html', {'form': OfferForm()})
+
 
 
 @login_required(login_url='admin-login')
 def delete_offer(request, off_id):
-    offer = get_object_or_404(Offer, id=off_id)
-    offer.is_block = not offer.is_block
-    offer.save()
+    try:
+        with transaction.atomic():
+            offer = get_object_or_404(Offer, id=off_id)
+            offer.is_block = not offer.is_block
+            offer.save()
 
-    if offer.is_block:
-        messages.success(request, f"{offer.title} Offer is Blocked")
-        return redirect('view-offers')  
-    else:
-        messages.success(request, f"{offer.title} Offer is Unblocked")
-        return redirect('view-offers')  
+            if offer.is_block:
+                products = Product.objects.select_for_update().filter(offer=offer)
+                categories = Category.objects.select_for_update().filter(offer=offer)
+                products.update(offer=None)
+                categories.update(offer=None)
+
+                messages.success(request, f"{offer.title} Offer is Blocked")
+                return redirect('view-offers')  
+            else:
+                messages.success(request, f"{offer.title} Offer is Unblocked")
+                return redirect('view-offers')  
+    
+    except Exception as e:
+        messages.error(request, "An unexpected error occurred while updating the offer status.")
+        logger.error(f"Unexpected error in delete_offer view for offer ID {off_id}: {e}", exc_info=True)
+        return redirect('view-offers')
     
 
 
-# --------------- Category offer ( apply offer for category )----------------
+# ------------- Category offer ( apply offer for category )----------------
 
 @login_required(login_url='admin-login')
-def view_category_offers(request) :
-    query = request.GET.get('query', '').strip()
-    if query:
-        categories = Category.objects.filter(name__icontains=query, is_available=True).order_by('-id')
-    else:
-        categories = Category.objects.filter(is_available=True).order_by('-id')
+def view_category_offers(request):
+    try:
+        query = request.GET.get('query', '').strip()
+        if query:
+            categories = Category.objects.filter(name__icontains=query, is_available=True).order_by('-id')
+        else:
+            categories = Category.objects.filter(is_available=True).order_by('-id')
+        
+        paginate_query = paginate_queryset(categories, request, 8)
+        return render(request, 'admin_dash/category_offers.html',{'categories':paginate_query, 'query':query})
     
-    paginate_query = paginate_queryset(categories, request, 8)
-    return render(request, 'admin_dash/category_offers.html',{'categories':paginate_query, 'query':query})
-
+    except Exception as e:
+        logger.error(f"Error while loading category offers: {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred while fetching category offers.")
+        return redirect('dashboard')
 
 
 @login_required(login_url='admin-login')
 def update_category_offer(request,c_id) :
-    category = get_object_or_404(Category, id=c_id)
-    if request.method == 'POST' :
-        form = CategoryOfferForm(request.POST,instance=category)
-        if form.is_valid() :
-            form.save()
-            
-            products_in_category = Product.objects.filter(categories=category, is_available=True)
-            for product in products_in_category :
-                product.offer = category.offer
-                product.save()
-            messages.success(request, 'Offer applied for category')
-            return redirect('view-category-offers')
-    else :
-        form = CategoryOfferForm(instance=category)
+    try:
+        category = get_object_or_404(Category, id=c_id)
+        if request.method == 'POST' :
+            form = CategoryOfferForm(request.POST,instance=category)
+            if form.is_valid() :
+                form.save()
+                
+                products_in_category = Product.objects.filter(categories=category, is_available=True)
+                for product in products_in_category :
+                    product.offer = category.offer
+                    product.save()
+                messages.success(request, 'Offer applied for category')
+                return redirect('view-category-offers')
+        else :
+            form = CategoryOfferForm(instance=category)
 
-    return render(request, 'admin_dash/apply_offer_for_category.html', {'form':form,'category':category}) 
+        return render(request, 'admin_dash/apply_offer_for_category.html', {'form':form,'category':category}) 
+    
+    except Category.DoesNotExist:
+        messages.warning(request, "Category not found.")
+        logger.warning(f"Tried to update offer for a non-existing category ID: {c_id}")
+        return redirect('view-category-offers')
 
+    except Exception as e:
+        logger.error(f"Error updating category offer for category ID {c_id}: {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred while updating the category offer.")
+        return redirect('view-category-offers')
+    
 
 @login_required(login_url='admin-login')
-def remove_category_offer(request,c_id) :
-    category = get_object_or_404(Category,id=c_id)
-    category.offer = None
-    category.save()
-    products_with_offer = Product.objects.filter(categories=category)
-    for product in products_with_offer :
-        product.offer = None
-        product.save()
-    messages.success(request, 'Category offer removed !')
-    return redirect('view-category-offers')
+def remove_category_offer(request,c_id):
+    try:
+        category = get_object_or_404(Category,id=c_id)
+        category.offer = None
+        category.save()
+        products_with_offer = Product.objects.filter(categories=category)
+        for product in products_with_offer :
+            product.offer = None
+            product.save()
+        messages.success(request, 'Category offer removed !')
+        return redirect('view-category-offers')
+    
+    except Category.DoesNotExist:
+        messages.warning(request, "Category not found.")
+        logger.warning(f"Tried to remove offer for non-existing category ID: {c_id}")
+        return redirect('view-category-offers')
+    
+    except Exception as e:
+        logger.error(f"Error removing category offer for category ID {c_id}: {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred while removing the category offer.")
+        return redirect('view-category-offers')
    
 
 
 # ---------------- Product Offer (apply offer for product ) ------------------
 
 @login_required(login_url='admin-login')
-def veiw_product_offers(request) :
-    query = request.GET.get('query', '').strip()
-    if query:
-        products = Product.objects.filter(name__icontains=query, is_available=True).order_by('-id')
-    else:
-        products = Product.objects.filter(is_available=True).order_by('-id')
-    paginate_query = paginate_queryset(products, request, 8)
-    return render(request, 'admin_dash/product_offers.html',{'products':paginate_query, 'query':query})
-
+def veiw_product_offers(request):
+    try:
+        query = request.GET.get('query', '').strip()
+        if query:
+            products = Product.objects.filter(name__icontains=query, is_available=True).order_by('-id')
+        else:
+            products = Product.objects.filter(is_available=True).order_by('-id')
+        paginate_query = paginate_queryset(products, request, 8)
+        return render(request, 'admin_dash/product_offers.html',{'products':paginate_query, 'query':query})
+    
+    except Exception as e:
+        logger.error(f"Error while loading product offers: {e}", exc_info=True)
+        messages.error(request, "An unexpected error occurred while fetching product offers.")
+        return redirect('dashboard')
 
 
 @login_required(login_url='admin-login')
 def update_product_offer(request,p_id) :
-    product = get_object_or_404(Product,id=p_id) 
-    if request.method == 'POST' :
-        form = ProductOfferForm(request.POST,instance=product)
-        if form.is_valid() :
-            form.save()
-            messages.success(request, 'Offer applied for Product')
-            return redirect('view-product-offers')
-    else :
-        form = ProductOfferForm(instance=product)
-    return render(request, 'admin_dash/apply_offer_for_product.html', {'form':form,'product':product})
+    try:
+        product = get_object_or_404(Product,id=p_id) 
+        if request.method == 'POST' :
+            form = ProductOfferForm(request.POST,instance=product)
+            if form.is_valid() :
+                form.save()
+                messages.success(request, 'Offer applied for Product')
+                return redirect('view-product-offers')
+        else :
+            form = ProductOfferForm(instance=product)
+        return render(request, 'admin_dash/apply_offer_for_product.html', {'form':form,'product':product})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in update_product_offer: {e}")
+        messages.error(request, 'An unexpected error occurred. Please try again later.')
+        return redirect('view-product-offers')
 
 
 @login_required(login_url='admin-login')
 def remove_product_offer(request,p_id) :
-    product = get_object_or_404(Product,id=p_id)
-    product.offer = None
-    product.save()
-    messages.success(request, 'Product offer removed !')
-    return redirect('view-product-offers')
+    try:
+        product = get_object_or_404(Product,id=p_id)
+        product.offer = None
+        product.save()
+        messages.success(request, 'Product offer removed !')
+        return redirect('view-product-offers')
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in remove_product_offer for product {p_id}: {e}")
+        messages.error(request, 'An unexpected error occurred. Please try again later.')
+        return redirect('view-product-offers')
 
 
 
@@ -1038,62 +1324,87 @@ def remove_product_offer(request,p_id) :
 
 @login_required(login_url='admin-login')
 def banner_management(request):
-    all_banner = Banner.objects.exclude(banner__isnull=True)
-    context = {
-        'all_banner': all_banner,
-    }
-    return render(request, 'admin_dash/banner_management.html', context)
+    try:
+        all_banner = Banner.objects.exclude(banner__isnull=True)
+        context = {
+            'all_banner': all_banner,
+        }
+        return render(request, 'admin_dash/banner_management.html', context)
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in banner_management: {e}")
+        messages.error(request, "An unexpected error occurred while loading banner. Please try again later.")
+        return redirect('dashboard')
 
 
 @login_required(login_url='admin-login')
 def add_banner_image(request) :
-    if request.method == 'POST' :
-        form = BannerForm(request.POST, request.FILES)
-        if form.is_valid() :  
-            form.save()
-            messages.success(request, "Banner successfully Added")
-            return redirect('banner-management')
-    else :
-        form = BannerForm()  
-    return render(request, 'admin_dash/add_banner.html',{'form':form})
+    try:
+        if request.method == 'POST' :
+            form = BannerForm(request.POST, request.FILES)
+            if form.is_valid() :  
+                form.save()
+                messages.success(request, "Banner successfully Added")
+                return redirect('banner-management')
+        else :
+            form = BannerForm()  
+        return render(request, 'admin_dash/add_banner.html',{'form':form})
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in add_banner_image: {e}")
+        messages.error(request, "An unexpected error occurred. Please try again later.")
+        return render(request, 'admin_dash/add_banner.html',{'form':BannerForm()})
 
 
 @login_required(login_url='admin-login')
-def delete_banner(request,b_id) :
-    banner = get_object_or_404(Banner, id=b_id)
-    if banner.is_available == True :
-        banner.is_available = False
-        banner.save()
-        messages.success(request, 'Banner blocked !')
+def delete_banner(request,b_id):
+    try:
+        banner = get_object_or_404(Banner, id=b_id)
+        if banner.is_available == True :
+            banner.is_available = False
+            banner.save()
+            messages.success(request, 'Banner blocked !')
+            return redirect('banner-management')
+        else :
+            banner.is_available = True
+            banner.save()
+            messages.success(request, 'Banner Unblocked ')
+            return redirect('banner-management')
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in delete_banner for banner {b_id}: {e}")
+        messages.error(request, "An unexpected error occurred while deleting banner. Please try again later.")
         return redirect('banner-management')
-    else :
-        banner.is_available = True
-        banner.save()
-        messages.success(request, 'Banner Unblocked ')
-        return redirect('banner-management')
 
 
 
-#-------------------- Dash board data ----------------------
+#---------------- Dash board data ----------------------
 
 @login_required(login_url='admin-login')
 def dash_board(request) :
-    total_products   = Product.objects.filter(is_available=True).count()
-    total_revenue = OrderItem.objects.filter(status='Delivered').aggregate(total=Sum(F('price') * F('quantity')))['total'] or 0
+    try:
+        total_products   = Product.objects.filter(is_available=True).count()
+        total_revenue = OrderItem.objects.filter(status='Delivered').aggregate(total=Sum(F('price') * F('quantity')))['total'] or 0
 
-    today = timezone.now()
-    start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    monthly_revenue = OrderItem.objects.filter(status='Delivered', created_at__gte=start_of_month).aggregate(total=Sum(F('price') * F('quantity')))['total'] or 0
-   
-    total_customers  = User.objects.filter(is_active=True,is_superuser=False).count()
+        today = timezone.now()
+        start_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        monthly_revenue = OrderItem.objects.filter(status='Delivered', created_at__gte=start_of_month).aggregate(total=Sum(F('price') * F('quantity')))['total'] or 0
+    
+        total_customers  = User.objects.filter(is_active=True,is_superuser=False).count()
 
-    total_orders = (
-        OrderItem.objects.aggregate(count=Count('id'))
-    )['count'] or 0
+        total_orders = (
+            OrderItem.objects.aggregate(count=Count('id'))
+        )['count'] or 0
 
-    cod_count = Order.objects.filter(payment_mode='COD').count()
-    razorpay_count = Order.objects.filter(payment_mode='paid by razorpay').count()
-    wallet_count = Order.objects.filter(payment_mode='paid by wallet').count()
+        cod_count = Order.objects.filter(payment_mode='COD').count()
+        razorpay_count = Order.objects.filter(payment_mode='paid by razorpay').count()
+        wallet_count = Order.objects.filter(payment_mode='paid by wallet').count()
+    
+    except Exception as e:
+        logger.error(f"Error loading dashboard data: {e}")
+        messages.error(request, "Some data could not be loaded. Showing default values.")
+        total_products = total_revenue = monthly_revenue = total_customers = total_orders = 0
+        cod_count = razorpay_count = wallet_count = 0
     
     context = {
         'total_products'  :total_products,
@@ -1150,29 +1461,33 @@ def get_sales_data(request, period):
 
 
 @login_required(login_url='admin-login')
-def view_sales_reports(request) :
-   
-    orders, total_amount_or_error = get_filtered_orders(
-        time_range=request.GET.get('time_range'),
-        start_date_input=request.GET.get('start_date'),
-        end_date_input=request.GET.get('end_date'),
-        status='Delivered'
-    )
+def view_sales_reports(request):
+    try:
+        orders, total_amount_or_error = get_filtered_orders(
+            time_range=request.GET.get('time_range'),
+            start_date_input=request.GET.get('start_date'),
+            end_date_input=request.GET.get('end_date'),
+            status='Delivered'
+        )
 
-    if orders is None:
-        messages.warning(request, total_amount_or_error)
-        return redirect('view-sales-reports')
+        if orders is None:
+            messages.warning(request, total_amount_or_error)
+            return redirect('view-sales-reports')
+        
+        paginate_data = paginate_queryset(orders, request, 10)
+        
+        context = {
+            'orders': paginate_data,
+            'selected_time_range': request.GET.get('time_range', 'all'),
+            'total_amount':total_amount_or_error
+        }
+
+        return render(request, 'admin_dash/view_sales_reports.html', context)
     
-    paginate_data = paginate_queryset(orders, request, 10)
-    
-    context = {
-        'orders': paginate_data,
-        'selected_time_range': request.GET.get('time_range', 'all'),
-        'total_amount':total_amount_or_error
-    }
-
-    return render(request, 'admin_dash/view_sales_reports.html', context)
-
+    except Exception as e:
+        logger.error(f"Unexpected error in view_sales_reports: {e}",exc_info=True)
+        messages.error(request, "An unexpected error occurred while loading sales reports.")
+        return redirect('dashboard')
 
 
 

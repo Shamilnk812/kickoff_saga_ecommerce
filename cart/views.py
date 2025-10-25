@@ -1,4 +1,5 @@
 import re
+import logging
 from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect
 from django.urls import reverse
@@ -20,97 +21,111 @@ import math
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
 
+logger = logging.getLogger(__name__)
+
 
 
 # ----------- Cart ------------
 @login_required(login_url='login')
 def view_cart(request):
-    if request.user.is_authenticated:
-        carts = Cart.objects.filter(user=request.user)
-        total_cost = Cart.total_cost_for_user(request.user)
+    try:
+        if request.user.is_authenticated:
+            carts = Cart.objects.filter(user=request.user)
+            total_cost = Cart.total_cost_for_user(request.user)
 
-        applied_coupon_code = request.session.get('coupon_code')
-        coupon = Coupon.objects.filter(coupon_code=applied_coupon_code, is_active=True).first()
-        
-        coupon_discount = 0
-        applied_coupon = None 
-        if coupon:
-            if total_cost >= coupon.minimum_amount:
-                coupon_discount = coupon.calculate_discount(total_cost)
-                applied_coupon = applied_coupon_code
-            else:
-                request.session.pop('coupon_code', None)
-                existing_coupon = UsedCoupon.objects.filter(user=request.user, used_coupon_code=applied_coupon_code)
-                if existing_coupon:
-                    existing_coupon.delete()
-                messages.warning(request, 'Coupon removed: Cart total below minimum.')
-
-        total_amount = total_cost - coupon_discount
-
-        # apply and validate coupon 
-        if request.method == 'POST':
-            coupon_code = request.POST.get('coupon')
-            coupon  = Coupon.objects.filter(coupon_code__icontains=coupon_code).first()
+            applied_coupon_code = request.session.get('coupon_code')
+            coupon = Coupon.objects.filter(coupon_code=applied_coupon_code, is_active=True).first()
             
+            coupon_discount = 0
+            applied_coupon = None 
+            if coupon:
+                if total_cost >= coupon.minimum_amount:
+                    coupon_discount = coupon.calculate_discount(total_cost)
+                    applied_coupon = applied_coupon_code
+                else:
+                    request.session.pop('coupon_code', None)
+                    existing_coupon = UsedCoupon.objects.filter(user=request.user, used_coupon_code=applied_coupon_code)
+                    if existing_coupon:
+                        existing_coupon.delete()
+                    messages.warning(request, 'Coupon removed: Cart total below minimum.')
 
-            if not coupon:
-                messages.warning(request, 'Invalid coupon code.')
-                return redirect('view_cart')
+            total_amount = total_cost - coupon_discount
 
-            if total_cost < coupon.minimum_amount:
-                messages.warning(request, f'Cart must be above ₹{coupon.minimum_amount} to use this coupon.')
+            # apply and validate coupon 
+            if request.method == 'POST':
+                coupon_code = request.POST.get('coupon')
+                coupon  = Coupon.objects.filter(coupon_code__icontains=coupon_code).first()
+                
+
+                if not coupon:
+                    messages.warning(request, 'Invalid coupon code.')
+                    return redirect('view_cart')
+
+                if total_cost < coupon.minimum_amount:
+                    messages.warning(request, f'Cart must be above ₹{coupon.minimum_amount} to use this coupon.')
+                    return redirect('view_cart')
+                
+                if UsedCoupon.objects.filter(user=request.user, used_coupon_code=coupon_code).exists():
+                    messages.warning(request, 'You already used this coupon.')
+                    return redirect('view_cart')
+                
+                if not coupon.is_active:
+                    messages.warning(request, 'Coupon expired.')
+                    return redirect('view_cart')
+
+                request.session['coupon_code'] = coupon_code
+                UsedCoupon.objects.create(user=request.user, used_coupon_code=coupon_code)
+
+                messages.success(request, "Coupon Applied")
                 return redirect('view_cart')
             
-            if UsedCoupon.objects.filter(user=request.user, used_coupon_code=coupon_code).exists():
-                messages.warning(request, 'You already used this coupon.')
-                return redirect('view_cart')
+        
+            total_saved_amount = 0 
+            for cart_item in carts:
+                if cart_item.is_valid_cart_item and cart_item.product.offer and cart_item.product.offer.is_valid:
+                    total_saved_amount += cart_item.product.offer_save_amount() * cart_item.product_qty
             
-            if not coupon.is_active:
-                messages.warning(request, 'Coupon expired.')
-                return redirect('view_cart')
+            print('toatla amount', math.floor(total_amount))
+            context = {
+                'cart': carts,
+                'total_amount': total_amount,
+                'sub_total': total_cost,
+                'total_saved_amount': total_saved_amount,
+                'coupon_discount':coupon_discount,
+                'applied_coupon':applied_coupon,
+                'coupon_discount_percentage':coupon.discount_percentage if coupon else 0,
+            }
+            return render(request, 'cart/view_cart.html', context)
 
-            request.session['coupon_code'] = coupon_code
-            UsedCoupon.objects.create(user=request.user, used_coupon_code=coupon_code)
-
-            messages.success(request, "Coupon Applied")
-            return redirect('view_cart')
+        else:
+            return redirect('login')
         
-      
-        total_saved_amount = 0 
-        for cart_item in carts:
-            if cart_item.is_valid_cart_item and cart_item.product.offer and cart_item.product.offer.is_valid:
-                total_saved_amount += cart_item.product.offer_save_amount() * cart_item.product_qty
-        
-        print('toatla amount', math.floor(total_amount))
-        context = {
-            'cart': carts,
-            'total_amount': total_amount,
-            'sub_total': total_cost,
-            'total_saved_amount': total_saved_amount,
-            'coupon_discount':coupon_discount,
-            'applied_coupon':applied_coupon,
-            'coupon_discount_percentage':coupon.discount_percentage if coupon else 0,
-        }
-        return render(request, 'cart/view_cart.html', context)
-
-    else:
-        return redirect('login')
+    except Exception as e:
+        logger.error(f"Unexpected error in view_cart : {e}", exc_info=True)
+        messages.error(request, "Something went wrong while fetching your cart. Please try again later.")
+        return redirect('home')
 
 
 
 @login_required(login_url='login')
 def remove_coupon(request): 
-    applied_coupon_code = request.session.get('coupon_code')
-    
-    if applied_coupon_code:
-        request.session.pop('coupon_code', None)
-        used_coupon = UsedCoupon.objects.filter(used_coupon_code=applied_coupon_code,user=request.user)
-        used_coupon.delete()
-        messages.success(request, 'Coupon Removed')
-    else:
-        messages.warning(request, 'No coupon applied')
+    try:
+        applied_coupon_code = request.session.get('coupon_code')
+        
+        if applied_coupon_code:
+            request.session.pop('coupon_code', None)
+            used_coupon = UsedCoupon.objects.filter(used_coupon_code=applied_coupon_code,user=request.user)
+            used_coupon.delete()
+            messages.success(request, 'Coupon Removed')
+        else:
+            messages.warning(request, 'No coupon applied')
 
-    return redirect('view_cart')
+        return redirect('view_cart')
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in remove_coupon : {e}", exc_info=True)
+        messages.error(request, "Something went wrong while removing the coupon.")
+        return redirect('view_cart')
 
 
 #----------- Add to cart ----------
@@ -166,140 +181,168 @@ def remove_cart_item(request, cart_id):
 
 #------------- Update cart items ---------------
 def update_cart(request):
-    if request.method == 'POST':
-        updated_items = 0
+    try:
+        if request.method == 'POST':
+            updated_items = 0
 
-        for key, value in request.POST.items():
-            if key.startswith('quantity_'):
-                item_id = key.split('_')[1]
-                new_quantity = int(value)
-
-                try:
-                    cart_item = Cart.objects.get(id=item_id)
-                    # Check for size-based stock availability
-                    product = cart_item.product
-                    size = cart_item.size
+            for key, value in request.POST.items():
+                if key.startswith('quantity_'):
+                    item_id = key.split('_')[1]
+                    new_quantity = int(value)
 
                     try:
-                        variant = Variants.objects.get(product=product, size=size)
-                        if variant.quantity >= new_quantity:
-                            
-                            cart_item.product_qty = new_quantity
-                            cart_item.save()
-                            updated_items += 1
-                        else:
-                            messages.error(request, f'Only {variant.quantity} items available in size {size} for {product.name}.')
-                    except Variants.DoesNotExist:
-                        messages.error(request, f'Variant with size {size} for {product.name} not found.')
+                        cart_item = Cart.objects.get(id=item_id)
+                        # Check for size-based stock availability
+                        product = cart_item.product
+                        size = cart_item.size
 
-                except Cart.DoesNotExist:
-                    messages.error(request, f'The item you are trying to update does not exist in your cart.')
+                        try:
+                            variant = Variants.objects.get(product=product, size=size)
+                            if variant.quantity >= new_quantity:
+                                
+                                cart_item.product_qty = new_quantity
+                                cart_item.save()
+                                updated_items += 1
+                            else:
+                                messages.error(request, f'Only {variant.quantity} items available in size {size} for {product.name}.')
+                        except Variants.DoesNotExist:
+                            messages.error(request, f'Variant with size {size} for {product.name} not found.')
 
-        if updated_items > 0:
-            messages.success(request, 'Your cart has been updated successfully.')
+                    except Cart.DoesNotExist:
+                        messages.error(request, f'The item you are trying to update does not exist in your cart.')
 
-    return redirect('view_cart') 
+            if updated_items > 0:
+                messages.success(request, 'Your cart has been updated successfully.')
+
+        return redirect('view_cart') 
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in update_cart : {e}", exc_info=True)
+        messages.error(request, "Something went wrong while updating your cart.")
+        return redirect('view_cart')
 
 
 
 #---------- Wishlist management ------------
 def add_to_wishlist(request):
-    if request.method == 'POST':
-        if request.user.is_authenticated :
-            product_id = request.POST.get('product_id')
-            product = Product.objects.get(id=product_id)
-            if Wishlist.objects.filter(product=product).exists() :
-                return JsonResponse({'error': 'Product already in your wishlist'})
+    try:
+        if request.method == 'POST':
+            if request.user.is_authenticated :
+                product_id = request.POST.get('product_id')
+                product = Product.objects.get(id=product_id)
+                if Wishlist.objects.filter(product=product).exists() :
+                    return JsonResponse({'error': 'Product already in your wishlist'})
+                else :
+                    Wishlist.objects.create(user=request.user,product=product)
+                return JsonResponse({'message': 'Product added to wishlist successfully'})
             else :
-                Wishlist.objects.create(user=request.user,product=product)
-            return JsonResponse({'message': 'Product added to wishlist successfully'})
-        else :
-            return JsonResponse({'error': 'Please login to add to wishlist'})
+                return JsonResponse({'error': 'Please login to add to wishlist'})
 
-    else:
-        return JsonResponse({'error': 'Invalid request method'})
+        else:
+            return JsonResponse({'error': 'Invalid request method'})
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in add_to_wishlist for : {e}", exc_info=True)
+        return JsonResponse({'error': 'Something went wrong. Please try again later.'})
     
 
 def view_wishlist(request) :
-    wishlist_items = Wishlist.objects.filter(user=request.user)
-    wishlist_items = wishlist_items.annotate(total_quantity=Sum('product__variants__quantity'))
-    for item in wishlist_items:
-        sizes = item.product.variants_set.values_list("size", flat=True).distinct()
-        item.sizes_list = ",".join([str(size) for size in sizes])
-        
-    return render(request, 'cart/wishlist.html',{'wishlist_items':wishlist_items})
+    try:
+        wishlist_items = Wishlist.objects.filter(user=request.user)
+        wishlist_items = wishlist_items.annotate(total_quantity=Sum('product__variants__quantity'))
+        for item in wishlist_items:
+            sizes = item.product.variants_set.values_list("size", flat=True).distinct()
+            item.sizes_list = ",".join([str(size) for size in sizes])
+            
+        return render(request, 'cart/wishlist.html',{'wishlist_items':wishlist_items})
+
+    except Exception as e:
+        logger.error(f"Unexpected error in view_wishlist: {e}", exc_info=True)
+        messages.error(request, "Something went wrong while fetching your wishlist.")
+        return redirect('home')
 
 
-def remove_wishlist_product(request,p_id) :
-    product = get_object_or_404(Wishlist,product=p_id)
-    product.delete()
-    messages.success(request, 'Product removed from wishlist')
-    return HttpResponseRedirect(reverse('wishlist'))
+def remove_wishlist_product(request,p_id):
+    try:
+        product = get_object_or_404(Wishlist,product=p_id)
+        product.delete()
+        messages.success(request, 'Product removed from wishlist')
+        return HttpResponseRedirect(reverse('wishlist'))
+    
+    except Exception as e:
+        logger.error(f"Unexpected error in remove_wishlist_product : {e}", exc_info=True)
+        messages.error(request, "Something went wrong while removing the product.")
+        return redirect('wishlist')
 
     
 # ----------------- Checkout -----------------
 @never_cache
 @login_required(login_url='log_in')
 def check_out(request):
-
-    cart_items = Cart.objects.filter(user=request.user)
-    if not cart_items.exists():
-        return redirect(reverse('home'))
-    
-    # Check if nay item is unavailable
-    unavailable_items = [item for item in cart_items if not item.is_valid_cart_item]
-    if unavailable_items:
-        messages.error(request, "Some items in your cart are no longer available. Please remove them before proceeding to checkout.")
-        return redirect(reverse('view_cart'))
-    
-    # Check if any item is out of stock
-    out_of_stock_items = [item for item in cart_items if not item.is_in_stock]
-    if out_of_stock_items:
-        messages.error(request, "Some item in your cart are out of stock. Please update your cart before proceeding to checkout.")
-        return redirect(reverse('view_cart'))  
-    
-    total_amount = sum(item.total_cost for item in cart_items)
-    total_price = total_amount
-    
-    # check if the coupon is exist and show the coupon and discount amount
-    applied_coupon_code = request.session.get('coupon_code')
-    coupon = Coupon.objects.filter(coupon_code=applied_coupon_code, is_active=True).first()
+    try:
+        cart_items = Cart.objects.filter(user=request.user)
+        if not cart_items.exists():
+            return redirect(reverse('home'))
         
-    coupon_discount = 0
-    applied_coupon = None 
-    if coupon:
-        if total_price >= coupon.minimum_amount:
-            coupon_discount = coupon.calculate_discount(total_price)
-            applied_coupon = applied_coupon_code
-            total_price = total_price - coupon_discount
- 
-    total_saved_amount = 0  
-
-    for cart in cart_items:
-        if cart.product.offer and cart.product.offer.is_valid:
-            total_saved_amount += cart.product.offer_save_amount() * cart.product_qty
+        # Check if nay item is unavailable
+        unavailable_items = [item for item in cart_items if not item.is_valid_cart_item]
+        if unavailable_items:
+            messages.error(request, "Some items in your cart are no longer available. Please remove them before proceeding to checkout.")
+            return redirect(reverse('view_cart'))
+        
+        # Check if any item is out of stock
+        out_of_stock_items = [item for item in cart_items if not item.is_in_stock]
+        if out_of_stock_items:
+            messages.error(request, "Some item in your cart are out of stock. Please update your cart before proceeding to checkout.")
+            return redirect(reverse('view_cart'))  
+        
+        total_amount = sum(item.total_cost for item in cart_items)
+        total_price = total_amount
+        
+        # check if the coupon is exist and show the coupon and discount amount
+        applied_coupon_code = request.session.get('coupon_code')
+        coupon = Coupon.objects.filter(coupon_code=applied_coupon_code, is_active=True).first()
+            
+        coupon_discount = 0
+        applied_coupon = None 
+        if coupon:
+            if total_price >= coupon.minimum_amount:
+                coupon_discount = coupon.calculate_discount(total_price)
+                applied_coupon = applied_coupon_code
+                total_price = total_price - coupon_discount
     
-    # Add shipping  cost 
-    shipping_cost = request.session.get('shipping_amount', 0)
-    shipping_type = request.session.get('shipping_type')
-    total_price = total_price + int(shipping_cost)
+        total_saved_amount = 0  
 
-    # address = Address.objects.filter(user=request.user).last()
-    addresses = Address.objects.filter(user=request.user)
-    
-    context = {
-        'cart_items': cart_items,
-        'total_price': max(round(total_price, 2), 0), 
-        'sub_total': total_amount,
-        'addresses': addresses ,
-        'total_saved_amount': total_saved_amount,
-        'applied_coupon':applied_coupon,
-        'coupon_discount':coupon_discount,
-        'coupon_discount_percentage':coupon.discount_percentage if coupon else 0,
-    }
+        for cart in cart_items:
+            if cart.product.offer and cart.product.offer.is_valid:
+                total_saved_amount += cart.product.offer_save_amount() * cart.product_qty
+        
+        # Add shipping  cost 
+        shipping_cost = request.session.get('shipping_amount', 0)
+        shipping_type = request.session.get('shipping_type')
+        total_price = total_price + int(shipping_cost)
 
-    return render(request, 'cart/checkout.html', context)
+        # address = Address.objects.filter(user=request.user).last()
+        addresses = Address.objects.filter(user=request.user)
+        
+        context = {
+            'cart_items': cart_items,
+            'total_price': max(round(total_price, 2), 0), 
+            'sub_total': total_amount,
+            'addresses': addresses ,
+            'total_saved_amount': total_saved_amount,
+            'applied_coupon':applied_coupon,
+            'coupon_discount':coupon_discount,
+            'coupon_discount_percentage':coupon.discount_percentage if coupon else 0,
+        }
+
+        return render(request, 'cart/checkout.html', context)
     
+    except Exception as e:
+        logger.error(f"Unexpected error in check_out : {e}", exc_info=True)
+        messages.error(request, "Something went wrong while processing your checkout.")
+        return redirect('view_cart')
+        
 
 
 # ----------- Check user wallet --------------
@@ -336,9 +379,9 @@ def update_shipping(request):
 
             return JsonResponse({"status": "success"})
         except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+            return JsonResponse({"status": "error", "message": str(e)})
 
-    return JsonResponse({"status": "invalid request"}, status=405)
+    return JsonResponse({"status": "invalid request"})
     
 
 
